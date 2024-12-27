@@ -2,7 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:intl/intl.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+
+class TaskData {
+  final List<dynamic> tasks;
+  final bool isOverdue;
+
+  TaskData({required this.tasks, required this.isOverdue});
+}
 
 class HomePage extends StatefulWidget {
   final Map<String, String> userData;
@@ -19,11 +26,12 @@ class HomePageState extends State<HomePage> with SingleTickerProviderStateMixin 
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
   final ScrollController _scrollController = ScrollController();
-  static const double _dateItemWidth = 53.0; // 45 width + 8 margin
+  static const double _dateItemWidth = 53.0;
   int completedTasks = 0;
   int totalTasks = 0;
   bool isLoading = true;
   String username = '';
+  Map<String, TaskData> tasksByDate = {};
 
   @override
   void initState() {
@@ -34,7 +42,7 @@ class HomePageState extends State<HomePage> with SingleTickerProviderStateMixin 
       vsync: this,
     );
     _fadeAnimation = Tween<double>(begin: 1.0, end: 0.0).animate(_fadeController);
-    fetchTasks();
+    fetchAllTasks();
   }
 
   @override
@@ -44,19 +52,63 @@ class HomePageState extends State<HomePage> with SingleTickerProviderStateMixin 
     super.dispose();
   }
 
-  void _animateToDate(bool forward) {
-  if (_scrollController.hasClients) {
-    final currentOffset = _scrollController.offset;
-    final viewportWidth = _scrollController.position.viewportDimension;
-    final scrollAmount = viewportWidth + 8; // Add extra space for margins
-    
-    _scrollController.animateTo(
-      forward ? currentOffset + scrollAmount : currentOffset - scrollAmount,
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeInOut,
-    );
+  Future<void> fetchAllTasks() async {
+    setState(() => isLoading = true);
+
+    try {
+      final storage = FlutterSecureStorage();
+      final credentials = await storage.read(key: 'credentials') ?? '';
+
+      final response = await http.get(
+        Uri.parse('http://10.0.2.2:8000/api/tasks/homepage-tasks/'),
+        headers: {
+          'Authorization': 'Basic $credentials',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final tasksData = data['tasks_by_date'] as Map<String, dynamic>;
+        
+        tasksByDate.clear();
+        tasksData.forEach((date, value) {
+          final taskData = value as Map<String, dynamic>;
+          tasksByDate[date] = TaskData(
+            tasks: taskData['due_tasks'] as List<dynamic>,
+            isOverdue: taskData['overdue'] as bool,
+          );
+        });
+
+        final currentDateStr = DateFormat('yyyy-MM-dd').format(selectedDate);
+        final currentTasks = tasksByDate[currentDateStr];
+        if (currentTasks != null) {
+          setState(() {
+            totalTasks = currentTasks.tasks.length;
+            completedTasks = 0;
+          });
+        }
+      }
+    } catch (e) {
+      print('Error fetching tasks: $e');
+    } finally {
+      setState(() => isLoading = false);
+    }
   }
-}
+
+  void _animateToDate(bool forward) {
+    if (_scrollController.hasClients) {
+      final currentOffset = _scrollController.offset;
+      final viewportWidth = _scrollController.position.viewportDimension;
+      final scrollAmount = viewportWidth + 8;
+      
+      _scrollController.animateTo(
+        forward ? currentOffset + scrollAmount : currentOffset - scrollAmount,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+    }
+  }
 
   bool _canSelectDate(DateTime date) {
     DateTime now = DateTime.now();
@@ -65,62 +117,15 @@ class HomePageState extends State<HomePage> with SingleTickerProviderStateMixin 
            !date.isAfter(oneMonthFromNow);
   }
 
-  Future<void> fetchTasks() async {
-    setState(() => isLoading = true);
-
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('token') ?? '';
-
-      final dateStr = DateFormat('yyyy-MM-dd').format(selectedDate);
-      final response = await http.get(
-        Uri.parse('http://10.0.2.2:8000/api/tasks/completed/?date=$dateStr'),
-        headers: {
-          'Authorization': 'Token $token',
-          'Content-Type': 'application/json',
-        },
-      );
-
-      if (response.statusCode == 200) {
-        final List<dynamic> completedTasksList = json.decode(response.body);
-
-        final dueTasksResponse = await http.get(
-          Uri.parse('http://10.0.2.2:8000/api/tasks/due/'),
-          headers: {
-            'Authorization': 'Token $token',
-            'Content-Type': 'application/json',
-          },
-        );
-
-        if (dueTasksResponse.statusCode == 200) {
-          final data = json.decode(dueTasksResponse.body);
-          final dueTasks = data['due_tasks'] as List;
-
-          setState(() {
-            completedTasks = completedTasksList.length;
-            totalTasks = completedTasksList.length + dueTasks.length;
-            isLoading = false;
-          });
-
-          if (DateUtils.isSameDay(selectedDate, DateTime.now())) {
-            _fadeController.reverse();
-          } else {
-            _fadeController.forward();
-          }
-        }
-      }
-    } catch (e) {
-      print('Error fetching tasks: $e');
-      setState(() => isLoading = false);
-    }
-  }
-
   String _getWeekday(DateTime date) {
     final weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     return weekdays[date.weekday % 7];
   }
 
   Widget _buildTaskCard() {
+    final dateStr = DateFormat('yyyy-MM-dd').format(selectedDate);
+    final tasks = tasksByDate[dateStr];
+    
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -140,41 +145,58 @@ class HomePageState extends State<HomePage> with SingleTickerProviderStateMixin 
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Tasks for today',
+                Text(
+                  tasks?.isOverdue == true ? 'Overdue Tasks' : 'Tasks for today',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
+                    color: tasks?.isOverdue == true ? Colors.red : Colors.black,
                   ),
                 ),
                 const SizedBox(height: 5),
-                if (isLoading)
-                  const CircularProgressIndicator()
-                else if (totalTasks == 0)
-                  Text(
-                    'No due tasks for today',
-                    style: TextStyle(
-                      color: Colors.grey[600],
-                      fontSize: 16,
-                      fontStyle: FontStyle.italic,
-                    ),
-                  )
-                else
-                  Text(
-                    '$completedTasks of $totalTasks completed',
-                    style: TextStyle(
-                      color: Colors.grey[600],
-                      fontSize: 16,
-                    ),
+                Text(
+                  'Total tasks: ${tasks?.tasks.length ?? 0}',
+                  style: TextStyle(
+                    color: Colors.grey[600],
+                    fontSize: 16,
                   ),
+                ),
               ],
             ),
           ),
           Image.asset(
-            'lib/assets/icons/plant_icon.png',
+            'lib/assets/icons/smiley_plant.png',
             height: 60,
+            width: 60,
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildNoTasksMessage() {
+    return Transform.translate(
+      offset: const Offset(0, -60),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Image.asset(
+              'lib/assets/icons/smiley_plant.png',
+              height: 100,
+              width: 100,
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'No due tasks for this day',
+              style: TextStyle(
+                color: Colors.grey[600],
+                fontSize: 18,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -182,11 +204,8 @@ class HomePageState extends State<HomePage> with SingleTickerProviderStateMixin 
   Widget _buildDatePicker() {
     return LayoutBuilder(
       builder: (context, constraints) {
-        // Calculate available width
-        // Total width minus arrow buttons (40px * 2) and their margins (5px * 2)
         final availableWidth = constraints.maxWidth - (40 * 2 + 10);
-        // Calculate date item width accounting for margins
-        final dateWidth = (availableWidth / 5) - 8; // Subtract margin space (4px on each side)
+        final dateWidth = (availableWidth / 5) - 8;
 
         return SizedBox(
           height: 80,
@@ -224,11 +243,11 @@ class HomePageState extends State<HomePage> with SingleTickerProviderStateMixin 
                       width: dateWidth,
                       margin: const EdgeInsets.symmetric(horizontal: 4),
                       decoration: BoxDecoration(
-                        color: isSelected ? const Color(0xFF2ECC71) : Colors.white,
+                        color: isSelected ? const Color(0xFF1FCC97) : Colors.white,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
                           color: isToday 
-                            ? const Color(0xFF2ECC71)
+                            ? const Color(0xFF1FCC97)
                             : Colors.grey.shade200,
                           width: isToday ? 2 : 1,
                         ),
@@ -238,10 +257,18 @@ class HomePageState extends State<HomePage> with SingleTickerProviderStateMixin 
                         child: InkWell(
                           borderRadius: BorderRadius.circular(12),
                           onTap: canSelect ? () {
+                            final dateStr = DateFormat('yyyy-MM-dd').format(date);
+                            final tasks = tasksByDate[dateStr];
                             setState(() {
                               selectedDate = date;
+                              if (tasks != null) {
+                                totalTasks = tasks.tasks.length;
+                                completedTasks = 0;
+                              } else {
+                                totalTasks = 0;
+                                completedTasks = 0;
+                              }
                             });
-                            fetchTasks();
                           } : null,
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
@@ -297,7 +324,7 @@ class HomePageState extends State<HomePage> with SingleTickerProviderStateMixin 
             ],
           ),
         );
-      }
+      },
     );
   }
 
@@ -309,7 +336,7 @@ class HomePageState extends State<HomePage> with SingleTickerProviderStateMixin 
         preferredSize: const Size.fromHeight(70.0),
         child: Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: const Color(0xFFFFEAB7),
             boxShadow: [
               BoxShadow(
                 color: Colors.grey.withOpacity(0.1),
@@ -350,21 +377,29 @@ class HomePageState extends State<HomePage> with SingleTickerProviderStateMixin 
         ),
       ),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(20.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildDatePicker(),
-              const SizedBox(height: 20),
-              FadeTransition(
-                opacity: _fadeAnimation,
-                child: DateUtils.isSameDay(selectedDate, DateTime.now())
-                    ? _buildTaskCard()
-                    : const SizedBox.shrink(),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: _buildDatePicker(),
+            ),
+            if (isLoading)
+              const Expanded(
+                child: Center(
+                  child: CircularProgressIndicator(),
+                ),
+              )
+            else if (totalTasks > 0)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                child: _buildTaskCard(),
+              )
+            else
+              Expanded(
+                child: _buildNoTasksMessage(),
               ),
-            ],
-          ),
+          ],
         ),
       ),
     );

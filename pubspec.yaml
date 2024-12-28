@@ -63,6 +63,9 @@ flutter:
   assets:
     - lib/assets/icons/plant_icon.png
     - lib/assets/icons/smiley_plant.png
+    - lib/assets/icons/dog_plant.png
+    - lib/assets/icons/leaves_bg.jpg
+    - lib/assets/icons/cat.png
   # To add assets to your application, add an assets section, like this:
   # assets:
   #   - images/a_dot_burr.jpeg

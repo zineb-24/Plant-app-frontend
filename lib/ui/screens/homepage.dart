@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:intl/intl.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
+
 class TaskData {
   final List<dynamic> tasks;
   final bool isOverdue;
@@ -122,7 +123,7 @@ class HomePageState extends State<HomePage> with SingleTickerProviderStateMixin 
     return weekdays[date.weekday % 7];
   }
 
-  Widget _buildTaskCard() {
+Widget _buildTaskCard() {
     final dateStr = DateFormat('yyyy-MM-dd').format(selectedDate);
     final tasks = tasksByDate[dateStr];
     
@@ -138,55 +139,210 @@ class HomePageState extends State<HomePage> with SingleTickerProviderStateMixin 
             blurRadius: 5,
           ),
         ],
+        image: DecorationImage(
+          image: AssetImage('lib/assets/icons/leaves_bg.jpg'),
+          fit: BoxFit.cover,
+          opacity: 0.8,
+        ),
       ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  tasks?.isOverdue == true ? 'Overdue Tasks' : 'Tasks for today',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: tasks?.isOverdue == true ? Colors.red : Colors.black,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.95), // Semi-transparent white overlay
+          borderRadius: BorderRadius.circular(12),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    tasks?.isOverdue == true ? 'Overdue Tasks' : 'Tasks for today',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: tasks?.isOverdue == true ? Colors.red : Colors.black,
+                      shadows: [  // Add subtle text shadow
+                        Shadow(
+                          blurRadius: 2,
+                          color: Colors.black.withOpacity(0.1),
+                          offset: const Offset(0, 1),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                const SizedBox(height: 5),
-                Text(
-                  'Total tasks: ${tasks?.tasks.length ?? 0}',
-                  style: TextStyle(
-                    color: Colors.grey[600],
-                    fontSize: 16,
+                  const SizedBox(height: 5),
+                  Text(
+                    '$completedTasks task${completedTasks != 1 ? 's' : ''} completed out of ${tasks?.tasks.length ?? 0}',
+                    style: TextStyle(
+                      color: Colors.grey[800], // Darker grey for better contrast
+                      fontSize: 16,
+                      fontStyle: FontStyle.italic,
+                      shadows: [  // Add subtle text shadow
+                        Shadow(
+                          blurRadius: 2,
+                          color: Colors.black.withOpacity(0.1),
+                          offset: const Offset(0, 1),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          Image.asset(
-            'lib/assets/icons/smiley_plant.png',
-            height: 60,
-            width: 60,
-          ),
-        ],
+            Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.01), // White background for icon
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Image.asset(
+                'lib/assets/icons/cat.png',
+                height: 60,
+                width: 60,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildNoTasksMessage() {
+ Widget _buildTaskList() {
+    final dateStr = DateFormat('yyyy-MM-dd').format(selectedDate);
+    final tasks = tasksByDate[dateStr];
+
+    if (tasks == null || tasks.tasks.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ...tasks.tasks.fold<Map<String, List<dynamic>>>(
+          {},
+          (map, task) {
+            if (!map.containsKey(task['task_name'])) {
+              map[task['task_name']] = [];
+            }
+            map[task['task_name']]!.add(task);
+            return map;
+          }
+        ).entries.map((entry) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
+                child: Text(
+                  entry.key.toString()[0].toUpperCase() + entry.key.toString().substring(1),
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              ...entry.value.map((task) => Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(15),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey.withOpacity(0.1),
+                        spreadRadius: 1,
+                        blurRadius: 5,
+                      ),
+                    ],
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(15),
+                    child: Row(
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(10),
+                          child: task['plant_image'] != null
+                            ? Image.network(
+                                'http://10.0.2.2:8000${task['plant_image']}',
+                                width: 60,
+                                height: 60,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Container(
+                                    width: 60,
+                                    height: 60,
+                                    color: Colors.grey[200],
+                                    child: Icon(Icons.image_not_supported, color: Colors.grey[400]),
+                                  );
+                                },
+                              )
+                            : Container(
+                                width: 60,
+                                height: 60,
+                                color: Colors.grey[200],
+                                child: Icon(Icons.image_not_supported, color: Colors.grey[400]),
+                              ),
+                        ),
+                        const SizedBox(width: 15),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                task['plant_nickname'] ?? 'Unnamed Plant',
+                                style: const TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(height: 5),
+                              Row(
+                                children: [
+                                  const Icon(
+                                    Icons.location_on_outlined,
+                                    size: 20,
+                                    color: Colors.grey,
+                                  ),
+                                  const SizedBox(width: 5),
+                                  Text(
+                                    task['site_name'] ?? 'No location',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      color: Colors.grey[600],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              )).toList(),
+            ],
+          );
+        }).toList(),
+      ],
+    );
+  }
+
+   Widget _buildNoTasksMessage() {
     return Transform.translate(
-      offset: const Offset(0, -60),
+      offset: const Offset(0, -80),
       child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Image.asset(
-              'lib/assets/icons/smiley_plant.png',
-              height: 100,
-              width: 100,
+              'lib/assets/icons/dog_plant.png',
+              height: 160,
+              width: 160,
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 1),
             Text(
               'No due tasks for this day',
               style: TextStyle(
@@ -243,11 +399,11 @@ class HomePageState extends State<HomePage> with SingleTickerProviderStateMixin 
                       width: dateWidth,
                       margin: const EdgeInsets.symmetric(horizontal: 4),
                       decoration: BoxDecoration(
-                        color: isSelected ? const Color(0xFF1FCC97) : Colors.white,
+                        color: isSelected ? const Color.fromARGB(255, 1, 167, 159) : Colors.white,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
                           color: isToday 
-                            ? const Color(0xFF1FCC97)
+                            ? const Color.fromARGB(255, 1, 167, 159)
                             : Colors.grey.shade200,
                           width: isToday ? 2 : 1,
                         ),
@@ -391,9 +547,18 @@ class HomePageState extends State<HomePage> with SingleTickerProviderStateMixin 
                 ),
               )
             else if (totalTasks > 0)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                child: _buildTaskCard(),
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Column(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                        child: _buildTaskCard(),
+                      ),
+                      _buildTaskList(),
+                    ],
+                  ),
+                ),
               )
             else
               Expanded(

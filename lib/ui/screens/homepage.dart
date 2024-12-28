@@ -9,7 +9,12 @@ class TaskData {
   final List<dynamic> tasks;
   final bool isOverdue;
 
-  TaskData({required this.tasks, required this.isOverdue});
+  TaskData({required this.tasks, required this.isOverdue}) {
+    // Sort tasks by completion status
+    tasks.sort((a, b) => (a['is_completed'] == b['is_completed']) 
+        ? 0 
+        : (a['is_completed'] ? 1 : -1));
+  }
 }
 
 class HomePage extends StatefulWidget {
@@ -53,6 +58,94 @@ class HomePageState extends State<HomePage> with SingleTickerProviderStateMixin 
     super.dispose();
   }
 
+Future<void> _showTaskCompletionDialog(int taskId) async {
+  print('Dialog method called for task: $taskId'); // Debug print
+  return showDialog<void>(
+    context: context,
+    barrierDismissible: false, // User must tap a button to close dialog
+    builder: (BuildContext context) {
+      print('Building dialog for task: $taskId'); // Debug print
+      return AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(15),
+        ),
+        title: const Text('Task Completion'),
+        content: const Text('Did you complete this task?'),
+        actions: <Widget>[
+          TextButton(
+            child: const Text('No', style: TextStyle(color: Colors.grey)),
+            onPressed: () {
+              print('No pressed'); // Debug print
+              Navigator.of(context).pop();
+            },
+          ),
+          TextButton(
+            child: const Text(
+              'Yes',
+              style: TextStyle(color: Color(0xFF018882)),
+            ),
+            onPressed: () {
+              print('Yes pressed for task: $taskId'); // Debug print
+              Navigator.of(context).pop();
+              _completeTask(taskId);
+            },
+          ),
+        ],
+      );
+    },
+  );
+}
+
+Future<void> _completeTask(int taskId) async {
+  try {
+    print('Completing task with ID: $taskId'); // Debug print
+    final storage = FlutterSecureStorage();
+    final credentials = await storage.read(key: 'credentials') ?? '';
+
+    final response = await http.post(
+      Uri.parse('http://10.0.2.2:8000/api/tasks/$taskId/complete/'),
+      headers: {
+        'Authorization': 'Basic $credentials',
+        'Content-Type': 'application/json',
+      },
+    );
+
+    print('Response status: ${response.statusCode}'); // Debug print
+    print('Response body: ${response.body}'); // Debug print
+
+    if (response.statusCode == 200) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Task completed successfully!'),
+          backgroundColor: const Color(0xFF018882),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+      );
+      
+      await fetchAllTasks();
+    } else {
+      throw Exception('Failed to complete task: ${response.statusCode}');
+    }
+  } catch (e) {
+    print('Error completing task: $e'); // Debug print
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Error: $e'),
+        backgroundColor: Colors.red,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+        ),
+      ),
+    );
+  }
+}
+
   Future<void> fetchAllTasks() async {
     setState(() => isLoading = true);
 
@@ -70,6 +163,7 @@ class HomePageState extends State<HomePage> with SingleTickerProviderStateMixin 
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
+        print('Tasks data: $data'); //debug line
         final tasksData = data['tasks_by_date'] as Map<String, dynamic>;
         
         tasksByDate.clear();
@@ -86,15 +180,15 @@ class HomePageState extends State<HomePage> with SingleTickerProviderStateMixin 
         if (currentTasks != null) {
           setState(() {
             totalTasks = currentTasks.tasks.length;
-            completedTasks = 0;
+            completedTasks = currentTasks.tasks.where((task) => task['is_completed'] == true).length;
           });
         }
       }
-    } catch (e) {
-      print('Error fetching tasks: $e');
-    } finally {
-      setState(() => isLoading = false);
-    }
+      } catch (e) {
+        print('Error fetching tasks: $e');
+      } finally {
+        setState(() => isLoading = false);
+      }
   }
 
   void _animateToDate(bool forward) {
@@ -124,211 +218,269 @@ class HomePageState extends State<HomePage> with SingleTickerProviderStateMixin 
   }
 
 Widget _buildTaskCard() {
-    final dateStr = DateFormat('yyyy-MM-dd').format(selectedDate);
-    final tasks = tasksByDate[dateStr];
-    
-    return Container(
-      padding: const EdgeInsets.all(20),
+  final dateStr = DateFormat('yyyy-MM-dd').format(selectedDate);
+  final tasks = tasksByDate[dateStr];
+  final isToday = DateUtils.isSameDay(selectedDate, DateTime.now());
+  
+  return Container(
+    padding: const EdgeInsets.all(20),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(15),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.grey.withOpacity(0.1),
+          spreadRadius: 1,
+          blurRadius: 5,
+        ),
+      ],
+      image: DecorationImage(
+        image: AssetImage('lib/assets/icons/leaves_bg.jpg'),
+        fit: BoxFit.cover,
+        opacity: 0.8,
+      ),
+    ),
+    child: Container(
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(15),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            spreadRadius: 1,
-            blurRadius: 5,
-          ),
-        ],
-        image: DecorationImage(
-          image: AssetImage('lib/assets/icons/leaves_bg.jpg'),
-          fit: BoxFit.cover,
-          opacity: 0.8,
-        ),
+        color: Colors.white.withOpacity(0.95),
+        borderRadius: BorderRadius.circular(12),
       ),
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.95), // Semi-transparent white overlay
-          borderRadius: BorderRadius.circular(12),
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    tasks?.isOverdue == true ? 'Overdue Tasks' : 'Tasks for today',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: tasks?.isOverdue == true ? Colors.red : Colors.black,
-                      shadows: [  // Add subtle text shadow
-                        Shadow(
-                          blurRadius: 2,
-                          color: Colors.black.withOpacity(0.1),
-                          offset: const Offset(0, 1),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 5),
-                  Text(
-                    '$completedTasks task${completedTasks != 1 ? 's' : ''} completed out of ${tasks?.tasks.length ?? 0}',
-                    style: TextStyle(
-                      color: Colors.grey[800], // Darker grey for better contrast
-                      fontSize: 16,
-                      fontStyle: FontStyle.italic,
-                      shadows: [  // Add subtle text shadow
-                        Shadow(
-                          blurRadius: 2,
-                          color: Colors.black.withOpacity(0.1),
-                          offset: const Offset(0, 1),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Container(
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.01), // White background for icon
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Image.asset(
-                'lib/assets/icons/cat.png',
-                height: 60,
-                width: 60,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
- Widget _buildTaskList() {
-    final dateStr = DateFormat('yyyy-MM-dd').format(selectedDate);
-    final tasks = tasksByDate[dateStr];
-
-    if (tasks == null || tasks.tasks.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        ...tasks.tasks.fold<Map<String, List<dynamic>>>(
-          {},
-          (map, task) {
-            if (!map.containsKey(task['task_name'])) {
-              map[task['task_name']] = [];
-            }
-            map[task['task_name']]!.add(task);
-            return map;
-          }
-        ).entries.map((entry) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
-                child: Text(
-                  entry.key.toString()[0].toUpperCase() + entry.key.toString().substring(1),
-                  style: const TextStyle(
-                    fontSize: 20,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  tasks?.isOverdue == true 
+                    ? 'Overdue Tasks' 
+                    : isToday 
+                      ? 'Tasks for today'
+                      : DateFormat('MMMM d').format(selectedDate),
+                  style: TextStyle(
+                    fontSize: 18,
                     fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              ...entry.value.map((task) => Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(15),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.grey.withOpacity(0.1),
-                        spreadRadius: 1,
-                        blurRadius: 5,
+                    color: tasks?.isOverdue == true ? Colors.red : Colors.black,
+                    shadows: [
+                      Shadow(
+                        blurRadius: 2,
+                        color: Colors.black.withOpacity(0.1),
+                        offset: const Offset(0, 1),
                       ),
                     ],
                   ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(15),
-                    child: Row(
-                      children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(10),
-                          child: task['plant_image'] != null
-                            ? Image.network(
-                                'http://10.0.2.2:8000${task['plant_image']}',
-                                width: 60,
-                                height: 60,
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) {
-                                  return Container(
-                                    width: 60,
-                                    height: 60,
-                                    color: Colors.grey[200],
-                                    child: Icon(Icons.image_not_supported, color: Colors.grey[400]),
-                                  );
-                                },
-                              )
-                            : Container(
-                                width: 60,
-                                height: 60,
-                                color: Colors.grey[200],
-                                child: Icon(Icons.image_not_supported, color: Colors.grey[400]),
-                              ),
-                        ),
-                        const SizedBox(width: 15),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                task['plant_nickname'] ?? 'Unnamed Plant',
-                                style: const TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              const SizedBox(height: 5),
-                              Row(
-                                children: [
-                                  const Icon(
-                                    Icons.location_on_outlined,
-                                    size: 20,
-                                    color: Colors.grey,
-                                  ),
-                                  const SizedBox(width: 5),
-                                  Text(
-                                    task['site_name'] ?? 'No location',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      color: Colors.grey[600],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
+                ),
+                const SizedBox(height: 5),
+                Text(
+                  '$completedTasks task${completedTasks != 1 ? 's' : ''} completed out of ${tasks?.tasks.length ?? 0}',
+                  style: TextStyle(
+                    color: Colors.grey[800],
+                    fontSize: 16,
+                    fontStyle: FontStyle.italic,
+                    shadows: [
+                      Shadow(
+                        blurRadius: 2,
+                        color: Colors.black.withOpacity(0.1),
+                        offset: const Offset(0, 1),
+                      ),
+                    ],
                   ),
                 ),
-              )).toList(),
-            ],
-          );
-        }).toList(),
-      ],
-    );
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.01),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Image.asset(
+              'lib/assets/icons/cat.png',
+              height: 60,
+              width: 60,
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+Widget _buildTaskList() {
+  final dateStr = DateFormat('yyyy-MM-dd').format(selectedDate);
+  final tasks = tasksByDate[dateStr];
+  final isToday = DateUtils.isSameDay(selectedDate, DateTime.now());
+
+  if (tasks == null || tasks.tasks.isEmpty) {
+    return const SizedBox.shrink();
   }
+
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      ...tasks.tasks.fold<Map<String, List<dynamic>>>(
+        {},
+        (map, task) {
+          if (!map.containsKey(task['task_name'])) {
+            map[task['task_name']] = [];
+          }
+          map[task['task_name']]!.add(task);
+          return map;
+        }
+      ).entries.map((entry) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
+              child: Text(
+                entry.key.toString()[0].toUpperCase() + entry.key.toString().substring(1),
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            ...entry.value.map((task) => Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(15),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.grey.withOpacity(0.1),
+                      spreadRadius: 1,
+                      blurRadius: 5,
+                    ),
+                  ],
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(15),
+                  child: Row(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(10),
+                        child: task['plant_image'] != null
+                          ? Image.network(
+                              'http://10.0.2.2:8000${task['plant_image']}',
+                              width: 60,
+                              height: 60,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Container(
+                                  width: 60,
+                                  height: 60,
+                                  color: Colors.grey[200],
+                                  child: Icon(Icons.image_not_supported, color: Colors.grey[400]),
+                                );
+                              },
+                            )
+                          : Container(
+                              width: 60,
+                              height: 60,
+                              color: Colors.grey[200],
+                              child: Icon(Icons.image_not_supported, color: Colors.grey[400]),
+                            ),
+                      ),
+                      const SizedBox(width: 15),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              task['plant_nickname'] ?? 'Unnamed Plant',
+                              style: const TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.black,
+                              ),
+                            ),
+                            const SizedBox(height: 5),
+                            Row(
+                              children: [
+                                const Icon(
+                                  Icons.location_on_outlined,
+                                  size: 20,
+                                  color: Colors.grey,
+                                ),
+                                const SizedBox(width: 5),
+                                Text(
+                                  task['site_name'] ?? 'No location',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    color: Colors.grey[600],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (task['is_completed'] ?? false)
+                        const SizedBox(
+                          width: 40,
+                          child: Icon(
+                            Icons.check_circle,
+                            color: Color(0xFF018882),
+                            size: 28,
+                          ),
+                        )
+                      else if (!isToday && selectedDate.isAfter(DateTime.now()))
+                        Container(
+                          margin: const EdgeInsets.only(left: 8),
+                          child: TextButton(
+                            onPressed: null,
+                            style: TextButton.styleFrom(
+                              backgroundColor: Colors.grey[300],
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                            ),
+                            child: const Text(
+                              'Done',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        )
+                      else
+                        Container(
+                          margin: const EdgeInsets.only(left: 8),
+                          child: TextButton(
+                            onPressed: () => _showTaskCompletionDialog(task['id']),
+                            style: TextButton.styleFrom(
+                              backgroundColor: const Color(0xFF018882),
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                            ),
+                            child: const Text(
+                              'Done',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            )).toList(),
+          ],
+        );
+      }).toList(),
+    ],
+  );
+}
 
    Widget _buildNoTasksMessage() {
     return Transform.translate(

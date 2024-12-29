@@ -647,6 +647,10 @@ Widget _buildTaskList() {
 
 @override
 Widget build(BuildContext context) {
+  final dateStr = DateFormat('yyyy-MM-dd').format(selectedDate);
+  final tasks = tasksByDate[dateStr];
+  final hasTasks = tasks != null && tasks.tasks.isNotEmpty;
+
   return Scaffold(
     backgroundColor: Colors.grey[100],
     appBar: PreferredSize(
@@ -697,51 +701,51 @@ Widget build(BuildContext context) {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Date Picker Section
+          // Date Picker Section (always visible)
           Padding(
             padding: const EdgeInsets.all(20.0),
             child: _buildDatePicker(),
           ),
-          const SizedBox(height: 10),
-          // "Tasks for Today" Section
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20.0),
-            child: FadeTransition(
-              opacity: _fadeAnimation,
-              child: _buildTaskCard(),
-            ),
-          ),
-          const SizedBox(height: 25), // Add spacing after task card
 
-          // Filter Buttons Section
-          Center(
-            child: FilterButtons(
-              onFilterChanged: (filter) {
-                // Handle the filter logic here
-                print('Filter changed to: $filter');
-                if (filter == 'plants') {
-                  // Show plant-related tasks
-                }
-              },
-            ),
-          ),
-          const SizedBox(height: 1), // Add spacing below the filter buttons
-
-          // Task List or Loading/No Tasks Section
+          // Conditional Content
           if (isLoading)
             const Expanded(
               child: Center(
                 child: CircularProgressIndicator(),
               ),
             )
-          else if (totalTasks > 0)
+          else if (hasTasks)
             Expanded(
-              child: SingleChildScrollView(
-                child: Column(
-                  children: [
-                    _buildTaskList(),
-                  ],
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 10),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                    child: FadeTransition(
+                      opacity: _fadeAnimation,
+                      child: _buildTaskCard(),
+                    ),
+                  ),
+                  const SizedBox(height: 25),
+                  Center(
+                    child: FilterButtons(
+                      onFilterChanged: (filter) {
+                        print('Filter changed to: $filter');
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 1),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      child: Column(
+                        children: [
+                          _buildTaskList(),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
             )
           else

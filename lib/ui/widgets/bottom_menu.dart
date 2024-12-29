@@ -46,6 +46,7 @@ class _BottomMenuState extends State<BottomMenu> {
           BottomNavigationBarItem(icon: Icon(Icons.pets), label: 'My Pets'),
           BottomNavigationBarItem(icon: Icon(Icons.calendar_today), label: 'Calendar'),
         ],
+        //backgroundColor: const Color(0xFFFFEAB7),
         selectedItemColor: Colors.teal,
         unselectedItemColor: Colors.grey,
         type: BottomNavigationBarType.fixed,

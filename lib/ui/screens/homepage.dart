@@ -475,10 +475,10 @@ Widget _buildTaskList() {
                   ),
                 ),
               ),
-            )).toList(),
+            )),
           ],
         );
-      }).toList(),
+      }),
     ],
   );
 }

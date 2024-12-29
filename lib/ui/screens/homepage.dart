@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:intl/intl.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import '/ui/widgets/filter_buttons.dart'; 
 
 
 class TaskData {
@@ -424,7 +425,7 @@ Widget _buildTaskList() {
                           width: 40,
                           child: Icon(
                             Icons.check_circle,
-                            color: Color(0xFF018882),
+                            color: Color.fromARGB(255, 1, 167, 159),
                             size: 28,
                           ),
                         )
@@ -455,7 +456,7 @@ Widget _buildTaskList() {
                           child: TextButton(
                             onPressed: () => _showTaskCompletionDialog(task['id']),
                             style: TextButton.styleFrom(
-                              backgroundColor: const Color(0xFF018882),
+                              backgroundColor: const Color.fromARGB(255, 1, 167, 159),
                               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(20),
@@ -509,216 +510,247 @@ Widget _buildTaskList() {
     );
   }
 
-  Widget _buildDatePicker() {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final availableWidth = constraints.maxWidth - (40 * 2 + 10);
-        final dateWidth = (availableWidth / 5) - 8;
+ Widget _buildDatePicker() {
+  return LayoutBuilder(
+    builder: (context, constraints) {
+      final availableWidth = constraints.maxWidth - (40 * 2 + 10); // Account for left and right arrows
+      final dateWidth = (availableWidth / 5) - 8; // Divide space among 5 items with margins
 
-        return SizedBox(
-          height: 80,
-          child: Row(
-            children: [
-              Container(
-                width: 40,
-                margin: const EdgeInsets.only(right: 5),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.grey.shade200),
-                ),
-                child: IconButton(
-                  icon: const Icon(Icons.chevron_left, color: Colors.grey),
-                  onPressed: () => _animateToDate(false),
-                  padding: EdgeInsets.zero,
-                  visualDensity: VisualDensity.compact,
-                ),
+      return SizedBox(
+        height: 80,
+        child: Row(
+          children: [
+            // Left Arrow
+            Container(
+              width: 40,
+              margin: const EdgeInsets.only(right: 5),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey.shade200),
               ),
-              Expanded(
-                child: ListView.builder(
-                  controller: _scrollController,
-                  scrollDirection: Axis.horizontal,
-                  itemCount: 30,
-                  physics: const BouncingScrollPhysics(),
-                  padding: EdgeInsets.zero,
-                  itemBuilder: (context, index) {
-                    final date = DateTime.now().add(Duration(days: index));
-                    final isSelected = DateUtils.isSameDay(date, selectedDate);
-                    final isToday = DateUtils.isSameDay(date, DateTime.now());
-                    final canSelect = _canSelectDate(date);
+              child: IconButton(
+                icon: const Icon(Icons.chevron_left, color: Colors.grey),
+                onPressed: () => _animateToDate(false),
+                padding: EdgeInsets.zero,
+                visualDensity: VisualDensity.compact,
+              ),
+            ),
+            // Date List
+            Expanded(
+              child: ListView.builder(
+                controller: _scrollController,
+                scrollDirection: Axis.horizontal,
+                itemCount: 30,
+                physics: const BouncingScrollPhysics(),
+                padding: EdgeInsets.zero,
+                itemBuilder: (context, index) {
+                  final date = DateTime.now().add(Duration(days: index));
+                  final isSelected = DateUtils.isSameDay(date, selectedDate);
+                  final isToday = DateUtils.isSameDay(date, DateTime.now());
+                  final canSelect = _canSelectDate(date);
 
-                    return Container(
-                      width: dateWidth,
-                      margin: const EdgeInsets.symmetric(horizontal: 4),
-                      decoration: BoxDecoration(
-                        color: isSelected ? const Color.fromARGB(255, 1, 167, 159) : Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: isToday 
+                  return Container(
+                    width: dateWidth,
+                    margin: const EdgeInsets.symmetric(horizontal: 4),
+                    decoration: BoxDecoration(
+                      color: isSelected ? const Color.fromARGB(255, 1, 167, 159) : Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: isToday
                             ? const Color.fromARGB(255, 1, 167, 159)
                             : Colors.grey.shade200,
-                          width: isToday ? 2 : 1,
-                        ),
+                        width: isToday ? 2 : 1,
                       ),
-                      child: Material(
-                        color: Colors.transparent,
-                        child: InkWell(
-                          borderRadius: BorderRadius.circular(12),
-                          onTap: canSelect ? () {
-                            final dateStr = DateFormat('yyyy-MM-dd').format(date);
-                            final tasks = tasksByDate[dateStr];
-                            setState(() {
-                              selectedDate = date;
-                              if (tasks != null) {
-                                totalTasks = tasks.tasks.length;
-                                completedTasks = 0;
-                              } else {
-                                totalTasks = 0;
-                                completedTasks = 0;
+                    ),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(12),
+                        onTap: canSelect
+                            ? () {
+                                final dateStr = DateFormat('yyyy-MM-dd').format(date);
+                                final tasks = tasksByDate[dateStr];
+                                setState(() {
+                                  selectedDate = date;
+                                  if (tasks != null) {
+                                    totalTasks = tasks.tasks.length;
+                                    completedTasks = tasks.tasks
+                                        .where((task) => task['is_completed'] == true)
+                                        .length;
+                                  } else {
+                                    totalTasks = 0;
+                                    completedTasks = 0;
+                                  }
+                                });
                               }
-                            });
-                          } : null,
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
-                                _getWeekday(date),
-                                style: TextStyle(
-                                  color: isSelected 
-                                    ? Colors.white 
-                                    : canSelect 
-                                      ? Colors.grey 
-                                      : Colors.grey.shade300,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w500,
-                                ),
+                            : null,
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              _getWeekday(date),
+                              style: TextStyle(
+                                color: isSelected
+                                    ? Colors.white
+                                    : canSelect
+                                        ? Colors.grey
+                                        : Colors.grey.shade300,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
                               ),
-                              const SizedBox(height: 4),
-                              Text(
-                                DateFormat('d').format(date),
-                                style: TextStyle(
-                                  color: isSelected 
-                                    ? Colors.white 
-                                    : canSelect 
-                                      ? Colors.black 
-                                      : Colors.grey.shade300,
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 16,
-                                ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              DateFormat('d').format(date),
+                              style: TextStyle(
+                                color: isSelected
+                                    ? Colors.white
+                                    : canSelect
+                                        ? Colors.black
+                                        : Colors.grey.shade300,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 16,
                               ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
                       ),
-                    );
-                  },
-                ),
-              ),
-              Container(
-                width: 40,
-                margin: const EdgeInsets.only(left: 5),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.grey.shade200),
-                ),
-                child: IconButton(
-                  icon: const Icon(Icons.chevron_right, color: Colors.grey),
-                  onPressed: () => _animateToDate(true),
-                  padding: EdgeInsets.zero,
-                  visualDensity: VisualDensity.compact,
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.grey[100],
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(70.0),
-        child: Container(
-          decoration: BoxDecoration(
-            color: const Color(0xFFFFEAB7),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.grey.withOpacity(0.1),
-                spreadRadius: 1,
-                blurRadius: 5,
-              ),
-            ],
-            borderRadius: const BorderRadius.only(
-              bottomLeft: Radius.circular(20),
-              bottomRight: Radius.circular(20),
-            ),
-          ),
-          child: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 10, 20, 10),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Welcome, $username!',
-                    style: const TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black,
                     ),
-                  ),
-                  CircleAvatar(
-                    backgroundColor: Colors.grey[200],
-                    child: const Icon(
-                      Icons.person,
-                      color: Colors.grey,
-                    ),
-                  ),
-                ],
+                  );
+                },
               ),
             ),
-          ),
-        ),
-      ),
-      body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: _buildDatePicker(),
-            ),
-            if (isLoading)
-              const Expanded(
-                child: Center(
-                  child: CircularProgressIndicator(),
-                ),
-              )
-            else if (totalTasks > 0)
-              Expanded(
-                child: SingleChildScrollView(
-                  child: Column(
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                        child: _buildTaskCard(),
-                      ),
-                      _buildTaskList(),
-                    ],
-                  ),
-                ),
-              )
-            else
-              Expanded(
-                child: _buildNoTasksMessage(),
+            // Right Arrow
+            Container(
+              width: 40,
+              margin: const EdgeInsets.only(left: 5),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey.shade200),
               ),
+              child: IconButton(
+                icon: const Icon(Icons.chevron_right, color: Colors.grey),
+                onPressed: () => _animateToDate(true),
+                padding: EdgeInsets.zero,
+                visualDensity: VisualDensity.compact,
+              ),
+            ),
           ],
         ),
+      );
+    },
+  );
+}
+
+
+@override
+Widget build(BuildContext context) {
+  return Scaffold(
+    backgroundColor: Colors.grey[100],
+    appBar: PreferredSize(
+      preferredSize: const Size.fromHeight(70.0),
+      child: Container(
+        decoration: BoxDecoration(
+          color: const Color(0xFFFFEAB7),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.1),
+              spreadRadius: 1,
+              blurRadius: 5,
+            ),
+          ],
+          borderRadius: const BorderRadius.only(
+            bottomLeft: Radius.circular(20),
+            bottomRight: Radius.circular(20),
+          ),
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 10, 20, 10),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Welcome, $username!',
+                  style: const TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                  ),
+                ),
+                CircleAvatar(
+                  backgroundColor: Colors.grey[200],
+                  child: const Icon(
+                    Icons.person,
+                    color: Colors.grey,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
-    );
-  }
+    ),
+    body: SafeArea(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Date Picker Section
+          Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: _buildDatePicker(),
+          ),
+          const SizedBox(height: 10),
+          // "Tasks for Today" Section
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20.0),
+            child: FadeTransition(
+              opacity: _fadeAnimation,
+              child: _buildTaskCard(),
+            ),
+          ),
+          const SizedBox(height: 25), // Add spacing after task card
+
+          // Filter Buttons Section
+          Center(
+            child: FilterButtons(
+              onFilterChanged: (filter) {
+                // Handle the filter logic here
+                print('Filter changed to: $filter');
+                if (filter == 'plants') {
+                  // Show plant-related tasks
+                }
+              },
+            ),
+          ),
+          const SizedBox(height: 1), // Add spacing below the filter buttons
+
+          // Task List or Loading/No Tasks Section
+          if (isLoading)
+            const Expanded(
+              child: Center(
+                child: CircularProgressIndicator(),
+              ),
+            )
+          else if (totalTasks > 0)
+            Expanded(
+              child: SingleChildScrollView(
+                child: Column(
+                  children: [
+                    _buildTaskList(),
+                  ],
+                ),
+              ),
+            )
+          else
+            Expanded(
+              child: _buildNoTasksMessage(),
+            ),
+        ],
+      ),
+    ),
+  );
+}
 }

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'ui/screens/homepage.dart';
-import 'ui/screens/login.dart';
+import 'ui/widgets/bottom_menu.dart'; // Import the BottomMenu widget
+import 'ui/screens/login.dart'; // Import the Login screen
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -67,8 +67,8 @@ class MyAppState extends State<MyApp> {
       title: 'Plant Reminder',
       theme: ThemeData(primarySwatch: Colors.blue),
       home: isLoggedIn
-          ? HomePage(
-              userData: {'username': username ?? 'User'},
+          ? BottomMenu( // Replace HomePage with BottomMenu
+              username: username ?? 'User', // Pass username if available
             )
           : LoginScreen(
               onLoginSuccess: (credentials) async {

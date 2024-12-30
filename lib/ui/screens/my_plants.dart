@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'dart:math';
+import '/ui/screens/site_plant_list.dart';
 
 class MyPlantsPage extends StatefulWidget {
   const MyPlantsPage({super.key});
@@ -107,157 +108,6 @@ void _addPlant() {
 void _addSite() {
   // Navigate to Add Site screen or show a dialog
 }
-
-@override
-Widget build(BuildContext context) {
-  return Scaffold(
-    backgroundColor: Colors.grey[100],
-    appBar: PreferredSize(
-      preferredSize: const Size.fromHeight(70.0),
-      child: Container(
-        decoration: BoxDecoration(
-          color: const Color(0xFFFFEAB7),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.withOpacity(0.1),
-              spreadRadius: 1,
-              blurRadius: 5,
-            ),
-          ],
-          borderRadius: const BorderRadius.only(
-            bottomLeft: Radius.circular(20),
-            bottomRight: Radius.circular(20),
-          ),
-        ),
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 10, 20, 10),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'My Plants',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black,
-                  ),
-                ),
-                CircleAvatar(
-                  backgroundColor: Colors.grey[200],
-                  child: const Icon(
-                    Icons.person,
-                    color: Colors.grey,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    ),
-    body: Column(
-      children: [
-        // Tab buttons
-        Padding(
-          padding: const EdgeInsets.all(20.0),
-          child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 3, horizontal: 3),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: Colors.grey.shade200),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.grey.withOpacity(0.1),
-                  spreadRadius: 0,
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Row(
-              children: [
-                _buildTabButton('Plants', 0),
-                _buildTabButton('Sites', 1),
-              ],
-            ),
-          ),
-        ),
-        // Content
-        Expanded(
-          child: selectedTabIndex == 0
-              ? isLoading
-                  ? const Center(child: CircularProgressIndicator())
-                  : errorMessage != null
-                      ? Center(child: Text(errorMessage!))
-                      : plants.isEmpty
-                          ? _buildEmptyState()
-                          : _buildPlantsList()
-              : isSitesLoading
-                  ? const Center(child: CircularProgressIndicator())
-                  : errorMessage != null
-                      ? Center(child: Text(errorMessage!))
-                      : sites.isEmpty
-                          ? _buildEmptyState()
-                          : _buildSitesList(),
-        ),
-        // Dynamic Add Button
-        Padding(
-          padding: const EdgeInsets.all(20.0),
-          child: SizedBox(
-            width: double.infinity,
-            child: TextButton(
-              onPressed: () {
-                if (selectedTabIndex == 0) {
-                  _addPlant(); // Call the add plant method
-                } else if (selectedTabIndex == 1) {
-                  _addSite(); // Call the add site method
-                }
-              },
-              style: TextButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                backgroundColor: const Color(0xFF01A79F),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(15),
-                ),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    width: 30,
-                    height: 30,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                    ),
-                    child: Image.asset(
-                      'lib/assets/icons/plus.png',
-                      height: 60,
-                      width: 60,
-                    ),
-                  ),
-                  const SizedBox(width: 12), 
-                  Text(
-                    selectedTabIndex == 0 ? 'Add Plant' : 'Add Site',
-                    style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ],
-    ),
-  );
-}
-
-
 
   Widget _buildTabButton(String text, int index) {
     final isSelected = selectedTabIndex == index;
@@ -439,119 +289,160 @@ Widget _buildSitesList() {
         plant['site'] != null && plant['site']['id'] == site['id']
       ).toList();
       
-      return Container(
-        margin: const EdgeInsets.only(bottom: 20),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(15),
-          border: Border.all(color: Colors.grey.shade200),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Plant Images Grid
-              SizedBox(
-                height: 120,
-                child: Row(
-                  children: [
-                    ...List.generate(
-                      min(4, sitePlants.length), // Show max 4 images
-                      (index) => Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.only(right: 12.0),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(10),
-                            child: sitePlants[index]['image'] != null
-                                ? Image.network(
-                                    'http://10.0.2.2:8000${sitePlants[index]['image']}',
-                                    height: 120,
-                                    fit: BoxFit.cover,
-                                  )
-                                : Container(
-                                    height: 120,
-                                    color: Colors.grey[100],
-                                    child: Icon(Icons.eco, 
-                                      color: Colors.grey[300],
-                                      size: 32,
-                                    ),
-                                  ),
+      return GestureDetector(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => SitePlantListPage(
+                site: site,
+                onPlantsChanged: () {
+                  fetchPlants();
+                  fetchSites();
+                },
+              ),
+            ),
+          );
+        },
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 20),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(15),
+            border: Border.all(color: Colors.grey.shade200),
+            // Add subtle shadow on hover effect
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withOpacity(0.1),
+                spreadRadius: 1,
+                blurRadius: 5,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Plant Images Grid
+                SizedBox(
+                  height: 120,
+                  child: Row(
+                    children: [
+                      ...List.generate(
+                        min(4, sitePlants.length), // Show max 4 images
+                        (index) => Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.only(right: 12.0),
+                            child: Hero(
+                              tag: 'site-plant-${sitePlants[index]['id']}',
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(10),
+                                child: sitePlants[index]['image'] != null
+                                    ? Image.network(
+                                        'http://10.0.2.2:8000${sitePlants[index]['image']}',
+                                        height: 120,
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (context, error, stackTrace) => Container(
+                                          height: 120,
+                                          color: Colors.grey[100],
+                                          child: Icon(Icons.eco, 
+                                            color: Colors.grey[300],
+                                            size: 32,
+                                          ),
+                                        ),
+                                      )
+                                    : Container(
+                                        height: 120,
+                                        color: Colors.grey[100],
+                                        child: Icon(Icons.eco, 
+                                          color: Colors.grey[300],
+                                          size: 32,
+                                        ),
+                                      ),
+                              ),
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                    // Fill remaining space with empty containers if less than 4 plants
-                    ...List.generate(
-                      max(0, 4 - sitePlants.length),
-                      (index) => Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.only(right: 12.0),
-                          child: Container(
-                            height: 120,
-                            decoration: BoxDecoration(
-                              color: Colors.grey[100],
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Icon(Icons.eco, 
-                              color: Colors.grey[300],
-                              size: 32,
+                      // Fill remaining space with empty containers if less than 4 plants
+                      ...List.generate(
+                        max(0, 4 - sitePlants.length),
+                        (index) => Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.only(right: 12.0),
+                            child: Container(
+                              height: 120,
+                              decoration: BoxDecoration(
+                                color: Colors.grey[100],
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Icon(Icons.eco, 
+                                color: Colors.grey[300],
+                                size: 32,
+                              ),
                             ),
                           ),
                         ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                // Site Details
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      site['name'] ?? 'Site name',
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    Icon(
+                      Icons.arrow_forward_ios,
+                      size: 16,
+                      color: Colors.grey[400],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                // Light and Tasks Info
+                Row(
+                  children: [
+                    Icon(Icons.wb_sunny_outlined, 
+                      size: 22,
+                      color: Color.fromARGB(255, 255, 204, 84),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      _formatLight(site['light']),
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Color.fromARGB(255, 255, 204, 84),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Icon(Icons.eco, 
+                      size: 22,
+                      color: const Color.fromARGB(255, 1, 167, 159),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      '${sitePlants.length} ${sitePlants.length == 1 ? "Plant" : "Plants"}',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        color: Color.fromARGB(255, 1, 167, 159),
                       ),
                     ),
                   ],
                 ),
-              ),
-              const SizedBox(height: 16),
-              // Site Details
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    site['name'] ?? 'Site name',
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black87,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              // Light and Tasks Info
-              Row(
-                children: [
-                  Icon(Icons.wb_sunny_outlined, 
-                    size: 22,
-                    color: Colors.grey[600],
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    _formatLight(site['light']),
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.grey[600],
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Icon(Icons.eco, 
-                    size: 22,
-                    color: const Color.fromARGB(255, 1, 167, 159),
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    '${sitePlants.length} ${sitePlants.length == 1 ? "Plant" : "Plants"}',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: Color.fromARGB(255, 1, 167, 159),
-                    ),
-                  ),
-                ],
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       );
@@ -559,4 +450,152 @@ Widget _buildSitesList() {
   );
 }
 
+@override
+Widget build(BuildContext context) {
+  return Scaffold(
+    backgroundColor: Colors.grey[100],
+    appBar: PreferredSize(
+      preferredSize: const Size.fromHeight(70.0),
+      child: Container(
+        decoration: BoxDecoration(
+          color: const Color(0xFFFFEAB7),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.1),
+              spreadRadius: 1,
+              blurRadius: 5,
+            ),
+          ],
+          borderRadius: const BorderRadius.only(
+            bottomLeft: Radius.circular(20),
+            bottomRight: Radius.circular(20),
+          ),
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 10, 20, 10),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'My Plants',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                  ),
+                ),
+                CircleAvatar(
+                  backgroundColor: Colors.grey[200],
+                  child: const Icon(
+                    Icons.person,
+                    color: Colors.grey,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    ),
+    body: Column(
+      children: [
+        // Tab buttons
+        Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 3, horizontal: 3),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: Colors.grey.shade200),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey.withOpacity(0.1),
+                  spreadRadius: 0,
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                _buildTabButton('Plants', 0),
+                _buildTabButton('Sites', 1),
+              ],
+            ),
+          ),
+        ),
+        // Content
+        Expanded(
+          child: selectedTabIndex == 0
+              ? isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : errorMessage != null
+                      ? Center(child: Text(errorMessage!))
+                      : plants.isEmpty
+                          ? _buildEmptyState()
+                          : _buildPlantsList()
+              : isSitesLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : errorMessage != null
+                      ? Center(child: Text(errorMessage!))
+                      : sites.isEmpty
+                          ? _buildEmptyState()
+                          : _buildSitesList(),
+        ),
+        // Dynamic Add Button
+        Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: SizedBox(
+            width: double.infinity,
+            child: TextButton(
+              onPressed: () {
+                if (selectedTabIndex == 0) {
+                  _addPlant(); // Call the add plant method
+                } else if (selectedTabIndex == 1) {
+                  _addSite(); // Call the add site method
+                }
+              },
+              style: TextButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                backgroundColor: const Color(0xFF01A79F),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(15),
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 30,
+                    height: 30,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Image.asset(
+                      'lib/assets/icons/plus.png',
+                      height: 60,
+                      width: 60,
+                    ),
+                  ),
+                  const SizedBox(width: 12), 
+                  Text(
+                    selectedTabIndex == 0 ? 'Add Plant' : 'Add Site',
+                    style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
+}
 }

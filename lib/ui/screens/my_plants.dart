@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'dart:math';
 import '/ui/screens/site_plant_list.dart';
+import '/ui/screens/add_site.dart';
 
 class MyPlantsPage extends StatefulWidget {
   const MyPlantsPage({super.key});
@@ -106,7 +107,17 @@ void _addPlant() {
 }
 
 void _addSite() {
-  // Navigate to Add Site screen or show a dialog
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (context) => AddSitePage(
+        onSiteAdded: () {
+          fetchSites();
+          fetchPlants();
+        },
+      ),
+    ),
+  );
 }
 
   Widget _buildTabButton(String text, int index) {
@@ -240,9 +251,9 @@ void _addSite() {
                     ),
                     const SizedBox(height: 4),  // Increased spacing
                     Text(
-                      plant['plant'] != null && plant['plant']['scientific_name'] != null
-                        ? plant['plant']['scientific_name']
-                        : 'Scientific name',
+                      plant['plant'] != null && plant['plant']['species_name'] != null
+                        ? plant['plant']['species_name']
+                        : 'Species name',
                       style: TextStyle(
                         fontSize: 17,  // Increased from 14
                         color: const Color.fromARGB(255, 1, 167, 159) ,

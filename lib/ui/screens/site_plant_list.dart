@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import '/ui/screens/site_settings.dart';
+import '/ui/screens/add_plant_to_site.dart';
 
 class SitePlantListPage extends StatefulWidget {
   final Map<String, dynamic> site;
@@ -182,9 +184,9 @@ Future<void> _removePlantFromSite(Map<String, dynamic> plant) async {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Image.asset(
-            'lib/assets/icons/empty_plant.png',
-            height: 160,
-            width: 160,
+            'lib/assets/icons/smiley_plant.png',
+            height: 100,
+            width: 100,
           ),
           const SizedBox(height: 20),
           Text(
@@ -243,7 +245,18 @@ Future<void> _removePlantFromSite(Map<String, dynamic> plant) async {
                   IconButton(
                     icon: const Icon(Icons.settings),
                     onPressed: () {
-                      // Add site settings navigation here
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => SiteSettingsPage(
+                            site: widget.site,
+                            onSiteChanged: () {
+                              fetchSitePlantsAndTasks();
+                              widget.onPlantsChanged();
+                            },
+                          ),
+                        ),
+                      );
                     },
                   ),
                 ],
@@ -252,133 +265,199 @@ Future<void> _removePlantFromSite(Map<String, dynamic> plant) async {
           ),
         ),
       ),
-      body: isLoading
-        ? const Center(child: CircularProgressIndicator())
-        : errorMessage != null
-          ? Center(child: Text(errorMessage!))
-          : plantsWithTasks.isEmpty
-            ? _buildEmptyState()
-            : ListView.builder(
-                padding: const EdgeInsets.all(20),
-                itemCount: plantsWithTasks.length,
-                itemBuilder: (context, index) {
-                  final plant = plantsWithTasks[index];
-                  return Container(
-                    margin: const EdgeInsets.only(bottom: 16),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.grey.shade200),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.grey.withOpacity(0.1),
-                          spreadRadius: 1,
-                          blurRadius: 5,
-                        ),
-                      ],
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: plant['image'] != null
-                                ? Image.network(
-                                    'http://10.0.2.2:8000${plant['image']}',
-                                    width: 100,
-                                    height: 100,
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (context, error, stackTrace) => Container(
-                                      width: 100,
-                                      height: 100,
-                                      color: Colors.grey[100],
-                                      child: Icon(
-                                        Icons.eco,
-                                        color: Colors.grey[300],
-                                        size: 40,
-                                      ),
-                                    ),
-                                  )
-                                : Container(
-                                    width: 100,
-                                    height: 100,
-                                    color: Colors.grey[100],
-                                    child: Icon(
-                                      Icons.eco,
-                                      color: Colors.grey[300],
-                                      size: 40,
-                                    ),
-                                  ),
+      body: Column(
+        children: [
+          Expanded(
+            child: isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : errorMessage != null
+                ? Center(child: Text(errorMessage!))
+                : plantsWithTasks.isEmpty
+                  ? _buildEmptyState()
+                  : ListView.builder(
+                      padding: const EdgeInsets.all(20),
+                      itemCount: plantsWithTasks.length,
+                      itemBuilder: (context, index) {
+                        final plant = plantsWithTasks[index];
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 16),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.grey.shade200),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.grey.withOpacity(0.1),
+                                spreadRadius: 1,
+                                blurRadius: 5,
+                              ),
+                            ],
                           ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
+                          child: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
-                                  plant['nickname'] ?? plant['plant']['species_name'] ?? 'Plant name',
-                                  style: const TextStyle(
-                                    fontSize: 21,
-                                    fontWeight: FontWeight.w500,
-                                    color: Colors.black87,
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: plant['image'] != null
+                                      ? Image.network(
+                                          'http://10.0.2.2:8000${plant['image']}',
+                                          width: 100,
+                                          height: 100,
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (context, error, stackTrace) => Container(
+                                            width: 100,
+                                            height: 100,
+                                            color: Colors.grey[100],
+                                            child: Icon(
+                                              Icons.eco,
+                                              color: Colors.grey[300],
+                                              size: 40,
+                                            ),
+                                          ),
+                                        )
+                                      : Container(
+                                          width: 100,
+                                          height: 100,
+                                          color: Colors.grey[100],
+                                          child: Icon(
+                                            Icons.eco,
+                                            color: Colors.grey[300],
+                                            size: 40,
+                                          ),
+                                        ),
+                                ),
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        plant['nickname'] ?? plant['plant']['species_name'] ?? 'Plant name',
+                                        style: const TextStyle(
+                                          fontSize: 21,
+                                          fontWeight: FontWeight.w500,
+                                          color: Colors.black87,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      if (plant['plant'] != null && plant['plant']['scientific_name'] != null)
+                                        Text(
+                                          plant['plant']['species_name'],
+                                          style: const TextStyle(
+                                            fontSize: 17,
+                                            color: Color.fromARGB(255, 1, 167, 159),
+                                            fontStyle: FontStyle.italic,
+                                          ),
+                                        ),
+                                      const SizedBox(height: 18),
+                                      Row(
+                                        children: [
+                                          Image.asset(
+                                            'lib/assets/icons/task.png',
+                                            height: 20,
+                                            width: 20,
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            '${plant['taskCount']} ${plant['taskCount'] == 1 ? 'task' : 'tasks'}',
+                                            style: TextStyle(
+                                              fontSize: 17,
+                                              color: Colors.grey[600],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
                                   ),
                                 ),
-                                const SizedBox(height: 4),
-                                if (plant['plant'] != null && plant['plant']['scientific_name'] != null)
-                                  Text(
-                                    plant['plant']['scientific_name'],
-                                    style: const TextStyle(
-                                      fontSize: 17,
-                                      color: Color.fromARGB(255, 1, 167, 159),
-                                      fontStyle: FontStyle.italic,
-                                    ),
+                                PopupMenuButton(
+                                  icon: const Icon(Icons.more_horiz),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(15),
                                   ),
-                                const SizedBox(height: 18),
-                                Row(
-                                  children: [
-                                    Image.asset(
-                                      'lib/assets/icons/task.png',
-                                      height: 20,
-                                      width: 20,
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      '${plant['taskCount']} ${plant['taskCount'] == 1 ? 'task' : 'tasks'}',
-                                      style: TextStyle(
-                                        fontSize: 17,
-                                        color: Colors.grey[600],
-                                      ),
+                                  itemBuilder: (context) => [
+                                    PopupMenuItem(
+                                      child: const Text('Delete from this site'),
+                                      onTap: () {
+                                        Future.delayed(
+                                          const Duration(milliseconds: 10),
+                                          () => _showDeleteConfirmation(plant),
+                                        );
+                                      },
                                     ),
                                   ],
                                 ),
                               ],
                             ),
                           ),
-                          PopupMenuButton(
-                            icon: const Icon(Icons.more_horiz),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(15),
-                            ),
-                            itemBuilder: (context) => [
-                              PopupMenuItem(
-                                child: const Text('Delete from this site'),
-                                onTap: () {
-                                  Future.delayed(
-                                    const Duration(milliseconds: 10),
-                                    () => _showDeleteConfirmation(plant),
-                                  );
-                                },
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
+                        );
+                      },
                     ),
-                  );
-                },
+          ),
+          // Add button at bottom
+          Transform.translate(
+            offset: const Offset(0, -30),
+            child : Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: SizedBox(
+                width: double.infinity,
+                child: TextButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => AddSitePlantPage(
+                          site: widget.site,
+                          onPlantAdded: () {
+                            fetchSitePlantsAndTasks();
+                            widget.onPlantsChanged();
+                          },
+                        ),
+                      ),
+                    );
+                  },
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    backgroundColor: const Color(0xFF01A79F),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        width: 30,
+                        height: 30,
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Image.asset(
+                          'lib/assets/icons/plus.png',
+                          height: 60,
+                          width: 60,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      const Text(
+                        'Add Plant',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

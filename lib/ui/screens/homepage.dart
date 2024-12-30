@@ -60,12 +60,12 @@ class HomePageState extends State<HomePage> with SingleTickerProviderStateMixin 
   }
 
 Future<void> _showTaskCompletionDialog(int taskId) async {
-  print('Dialog method called for task: $taskId'); // Debug print
+  //print('Dialog method called for task: $taskId'); // Debug print
   return showDialog<void>(
     context: context,
     barrierDismissible: false, // User must tap a button to close dialog
     builder: (BuildContext context) {
-      print('Building dialog for task: $taskId'); // Debug print
+      //print('Building dialog for task: $taskId'); // Debug print
       return AlertDialog(
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(15),
@@ -76,7 +76,7 @@ Future<void> _showTaskCompletionDialog(int taskId) async {
           TextButton(
             child: const Text('No', style: TextStyle(color: Colors.grey)),
             onPressed: () {
-              print('No pressed'); // Debug print
+              //print('No pressed'); // Debug print
               Navigator.of(context).pop();
             },
           ),
@@ -86,7 +86,7 @@ Future<void> _showTaskCompletionDialog(int taskId) async {
               style: TextStyle(color: Color(0xFF018882)),
             ),
             onPressed: () {
-              print('Yes pressed for task: $taskId'); // Debug print
+              //print('Yes pressed for task: $taskId'); // Debug print
               Navigator.of(context).pop();
               _completeTask(taskId);
             },
@@ -99,7 +99,7 @@ Future<void> _showTaskCompletionDialog(int taskId) async {
 
 Future<void> _completeTask(int taskId) async {
   try {
-    print('Completing task with ID: $taskId'); // Debug print
+    //print('Completing task with ID: $taskId'); // Debug print
     final storage = FlutterSecureStorage();
     final credentials = await storage.read(key: 'credentials') ?? '';
 
@@ -111,8 +111,8 @@ Future<void> _completeTask(int taskId) async {
       },
     );
 
-    print('Response status: ${response.statusCode}'); // Debug print
-    print('Response body: ${response.body}'); // Debug print
+    //print('Response status: ${response.statusCode}'); // Debug print
+    //print('Response body: ${response.body}'); // Debug print
 
     if (response.statusCode == 200) {
       if (!mounted) return;
@@ -132,7 +132,7 @@ Future<void> _completeTask(int taskId) async {
       throw Exception('Failed to complete task: ${response.statusCode}');
     }
   } catch (e) {
-    print('Error completing task: $e'); // Debug print
+    //print('Error completing task: $e'); // Debug print
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -164,7 +164,7 @@ Future<void> _completeTask(int taskId) async {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        print('Tasks data: $data'); //debug line
+        //print('Tasks data: $data'); //debug line
         final tasksData = data['tasks_by_date'] as Map<String, dynamic>;
         
         tasksByDate.clear();
@@ -485,7 +485,7 @@ Widget _buildTaskList() {
 
    Widget _buildNoTasksMessage() {
     return Transform.translate(
-      offset: const Offset(0, -80),
+      offset: const Offset(0, -60),
       child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,

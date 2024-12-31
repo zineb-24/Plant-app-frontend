@@ -80,7 +80,7 @@ class FilterButton extends StatelessWidget {
     return GestureDetector(
       onTap: isEnabled ? onTap : null,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
         decoration: BoxDecoration(
           color: isSelected ? const Color.fromARGB(255, 1, 167, 159) : Colors.grey.shade200,
           borderRadius: BorderRadius.circular(20),
@@ -99,6 +99,7 @@ class FilterButton extends StatelessWidget {
             Text(
               label,
               style: TextStyle(
+                fontSize: 17,
                 color: isSelected ? Colors.white : Colors.black54,
                 fontWeight: FontWeight.bold,
               ),

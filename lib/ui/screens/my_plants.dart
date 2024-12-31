@@ -5,6 +5,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'dart:math';
 import '/ui/screens/site_plant_list.dart';
 import '/ui/screens/add_site.dart';
+import '/ui/screens/search_plants.dart';
 
 class MyPlantsPage extends StatefulWidget {
   const MyPlantsPage({super.key});
@@ -103,7 +104,12 @@ String _formatLight(String? light) {
 }
 
 void _addPlant() {
-  // Navigate to Add Plant screen or show a dialog
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (context) => const SearchPlantsPage(),
+    ),
+  );
 }
 
 void _addSite() {
@@ -211,7 +217,9 @@ void _addSite() {
                 borderRadius: BorderRadius.circular(8),
                 child: plant['image'] != null
                     ? Image.network(
-                        'http://10.0.2.2:8000${plant['image']}',
+                        plant['image']?.startsWith('http://localhost') == true
+                          ? plant['image']?.replaceFirst('http://localhost', 'http://10.0.2.2')
+                          : plant['image'],
                         width: 100,  // Increased from 80
                         height: 100, // Increased from 80
                         fit: BoxFit.cover,

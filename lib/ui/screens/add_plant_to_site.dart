@@ -211,7 +211,9 @@ class AddSitePlantPageState extends State<AddSitePlantPage> {
                     borderRadius: BorderRadius.circular(8),
                     child: plant['image'] != null
                       ? Image.network(
-                          'http://10.0.2.2:8000${plant['image']}',
+                          plant['image']?.startsWith('http://localhost') == true
+                            ? plant['image']?.replaceFirst('http://localhost', 'http://10.0.2.2')
+                            : plant['image'],
                           width: 100,
                           height: 100,
                           fit: BoxFit.cover,

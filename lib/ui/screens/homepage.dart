@@ -450,7 +450,7 @@ Widget _buildTaskList() {
                          width: 40,
                          child: Icon(
                            Icons.check_circle,
-                           color: Color.fromARGB(255, 1, 167, 159),
+                           color: Color(0xFF01A79F),
                            size: 28,
                          ),
                        )

@@ -360,7 +360,9 @@ Widget _buildSitesList() {
                                 borderRadius: BorderRadius.circular(10),
                                 child: sitePlants[index]['image'] != null
                                     ? Image.network(
-                                        'http://10.0.2.2:8000${sitePlants[index]['image']}',
+                                      sitePlants[index]['image']?.startsWith('http://localhost') == true
+                                        ? sitePlants[index]['image']?.replaceFirst('http://localhost', 'http://10.0.2.2')
+                                        : sitePlants[index]['image'],
                                         height: 120,
                                         fit: BoxFit.cover,
                                         errorBuilder: (context, error, stackTrace) => Container(

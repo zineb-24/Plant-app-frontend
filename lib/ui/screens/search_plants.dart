@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import '/ui/screens/add_user_plant_form.dart';
 
 class SearchPlantsPage extends StatefulWidget {
   const SearchPlantsPage({Key? key}) : super(key: key);
@@ -106,93 +107,93 @@ Widget _buildNoResultsMessage() {
 }
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.grey[100],
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(70.0),
-        child: Container(
-          decoration: BoxDecoration(
-            color: const Color(0xFFFFEAB7),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.grey.withOpacity(0.1),
-                spreadRadius: 1,
-                blurRadius: 5,
-              ),
-            ],
-            borderRadius: const BorderRadius.only(
-              bottomLeft: Radius.circular(20),
-              bottomRight: Radius.circular(20),
+Widget build(BuildContext context) {
+  return Scaffold(
+    backgroundColor: Colors.grey[100],
+    appBar: PreferredSize(
+      preferredSize: const Size.fromHeight(70.0),
+      child: Container(
+        decoration: BoxDecoration(
+          color: const Color(0xFFFFEAB7),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.1),
+              spreadRadius: 1,
+              blurRadius: 5,
             ),
+          ],
+          borderRadius: const BorderRadius.only(
+            bottomLeft: Radius.circular(20),
+            bottomRight: Radius.circular(20),
           ),
-          child: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(8, 10, 20, 10),
-              child: Row(
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.arrow_back_ios_new),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                  const Expanded(
-                    child: Text(
-                      'Search Plants',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black,
-                      ),
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(8, 10, 20, 10),
+            child: Row(
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.arrow_back_ios_new),
+                  onPressed: () => Navigator.pop(context),
+                ),
+                const Expanded(
+                  child: Text(
+                    'Search Plants',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),
       ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(20),
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(15),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.grey.withOpacity(0.1),
-                    spreadRadius: 1,
-                    blurRadius: 5,
-                  ),
-                ],
-              ),
-              child: TextField(
-                controller: searchController,
-                onChanged: (query) {
-                  if (query.isEmpty) {
-                    fetchInitialPlants();
-                  } else {
-                    searchPlants(query);
-                  }
-                },
-                decoration: InputDecoration(
-                  hintText: 'Plant name',
-                  hintStyle: TextStyle(color: Colors.grey[400], fontSize: 18),
-                  prefixIcon: Icon(Icons.search, color: Colors.grey[400], size: 25),
-                  border: InputBorder.none,
-                  contentPadding: const EdgeInsets.all(20),
+    ),
+    body: Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(20),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(15),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey.withOpacity(0.1),
+                  spreadRadius: 1,
+                  blurRadius: 5,
                 ),
+              ],
+            ),
+            child: TextField(
+              controller: searchController,
+              onChanged: (query) {
+                if (query.isEmpty) {
+                  fetchInitialPlants();
+                } else {
+                  searchPlants(query);
+                }
+              },
+              decoration: InputDecoration(
+                hintText: 'Plant name',
+                hintStyle: TextStyle(color: Colors.grey[400], fontSize: 18),
+                prefixIcon: Icon(Icons.search, color: Colors.grey[400], size: 25),
+                border: InputBorder.none,
+                contentPadding: const EdgeInsets.all(20),
               ),
             ),
           ),
-          Expanded(
-            child: isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : errorMessage != null
-                ? Center(child: Text(errorMessage!))
-                : plants.isEmpty // Check if no plants were found
-                  ? _buildNoResultsMessage()
+        ),
+        Expanded(
+          child: isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : errorMessage != null
+              ? Center(child: Text(errorMessage!))
+              : plants.isEmpty
+                ? _buildNoResultsMessage()
                 : ListView.builder(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     itemCount: plants.length,
@@ -262,17 +263,37 @@ Widget _buildNoResultsMessage() {
                                   ],
                                 ),
                               ),
-                              Container(
-                                width: 40,
-                                height: 40,
-                                decoration: const BoxDecoration(
-                                  color: Color(0xFF01A79F),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Icon(
-                                  Icons.add,
-                                  color: Colors.white,
-                                  size: 30,
+                              Material(
+                                color: Colors.transparent,
+                                child: InkWell(
+                                  borderRadius: BorderRadius.circular(20),
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => AddUserPlantForm(
+                                          plantSpecies: plant,
+                                        ),
+                                      ),
+                                    ).then((added) {
+                                      if (added == true) {
+                                        Navigator.pop(context);
+                                      }
+                                    });
+                                  },
+                                  child: Ink(
+                                    width: 40,
+                                    height: 40,
+                                    decoration: const BoxDecoration(
+                                      color: Color(0xFF01A79F),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(
+                                      Icons.add,
+                                      color: Colors.white,
+                                      size: 30,
+                                    ),
+                                  ),
                                 ),
                               ),
                             ],
@@ -281,9 +302,9 @@ Widget _buildNoResultsMessage() {
                       );
                     },
                   ),
-          ),
-        ],
-      ),
-    );
-  }
+        ),
+      ],
+    ),
+  );
+}
 }

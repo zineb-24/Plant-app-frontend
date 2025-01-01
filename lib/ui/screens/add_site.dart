@@ -6,7 +6,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 class AddSitePage extends StatefulWidget {
   final VoidCallback onSiteAdded;
 
-  const AddSitePage({Key? key, required this.onSiteAdded}) : super(key: key);
+  const AddSitePage({super.key, required this.onSiteAdded});
 
   @override
   AddSitePageState createState() => AddSitePageState();

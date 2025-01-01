@@ -8,10 +8,10 @@ class SiteSettingsPage extends StatefulWidget {
   final VoidCallback onSiteChanged;
 
   const SiteSettingsPage({
-    Key? key,
+    super.key,
     required this.site,
     required this.onSiteChanged,
-  }) : super(key: key);
+  });
 
   @override
   SiteSettingsPageState createState() => SiteSettingsPageState();

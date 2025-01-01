@@ -6,12 +6,12 @@ import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 
 class AddUserPlantForm extends StatefulWidget {
-  final Map<String, dynamic> plantSpecies;
+  final Map<String, dynamic> plantSpecies;  
 
   const AddUserPlantForm({
-    Key? key,
+    super.key,
     required this.plantSpecies,
-  }) : super(key: key);
+  });
 
   @override
   AddUserPlantFormState createState() => AddUserPlantFormState();
@@ -107,6 +107,7 @@ class AddUserPlantFormState extends State<AddUserPlantForm> {
         'Authorization': 'Basic $credentials',
       });
 
+      //request.fields['plant'] = widget.plantSpecies['id'].toString();
       request.fields['plant_id'] = widget.plantSpecies['id'].toString();
       request.fields['nickname'] = nicknameController.text;
       if (selectedSite != null) {
@@ -190,6 +191,7 @@ class AddUserPlantFormState extends State<AddUserPlantForm> {
       setState(() => isLoading = false);
     }
   }
+
 
  Widget _buildTaskFrequencyItem(
   String taskName,

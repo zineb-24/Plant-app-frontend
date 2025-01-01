@@ -8,10 +8,10 @@ class AddSitePlantPage extends StatefulWidget {
   final VoidCallback onPlantAdded;
 
   const AddSitePlantPage({
-    Key? key,
+    super.key,
     required this.site,
     required this.onPlantAdded,
-  }) : super(key: key);
+  });
 
   @override
   AddSitePlantPageState createState() => AddSitePlantPageState();

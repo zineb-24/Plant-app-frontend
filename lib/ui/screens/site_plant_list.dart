@@ -10,10 +10,10 @@ class SitePlantListPage extends StatefulWidget {
   final VoidCallback onPlantsChanged;
 
   const SitePlantListPage({
-    Key? key,
+    super.key,
     required this.site,
     required this.onPlantsChanged,
-  }) : super(key: key);
+  });
 
   @override
   SitePlantListPageState createState() => SitePlantListPageState();

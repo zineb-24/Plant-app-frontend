@@ -277,7 +277,7 @@ Widget build(BuildContext context) {
                                       ),
                                     ).then((added) {
                                       if (added == true) {
-                                        Navigator.pop(context);
+                                        Navigator.pop(context, true); // Return true to indicate a new plant was added
                                       }
                                     });
                                   },

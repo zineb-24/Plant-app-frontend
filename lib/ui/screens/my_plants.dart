@@ -6,6 +6,7 @@ import 'dart:math';
 import '/ui/screens/site_plant_list.dart';
 import '/ui/screens/add_site.dart';
 import '/ui/screens/search_plants.dart';
+import '/ui/screens/add_user_plant_form.dart';
 
 class MyPlantsPage extends StatefulWidget {
   const MyPlantsPage({super.key});
@@ -31,33 +32,34 @@ class MyPlantsPageState extends State<MyPlantsPage> {
   }
 
   Future<void> fetchPlants() async {
-    try {
-      setState(() => isLoading = true);
-      final credentials = await storage.read(key: 'credentials');
-      
-      final response = await http.get(
-        Uri.parse('http://10.0.2.2:8000/api/user-plants/'),
-        headers: {
-          'Authorization': 'Basic $credentials',
-          'Content-Type': 'application/json',
-        },
-      );
+  try {
+    setState(() => isLoading = true);
+    final credentials = await storage.read(key: 'credentials');
 
-      if (response.statusCode == 200) {
-        setState(() {
-          plants = json.decode(response.body);
-          isLoading = false;
-        });
-      } else {
-        throw Exception('Failed to load plants');
-      }
-    } catch (e) {
+    final response = await http.get(
+      Uri.parse('http://10.0.2.2:8000/api/user-plants/'),
+      headers: {
+        'Authorization': 'Basic $credentials',
+        'Content-Type': 'application/json',
+      },
+    );
+
+    if (response.statusCode == 200) {
       setState(() {
-        errorMessage = 'Failed to load plants. Please try again.';
+        plants = List.from(json.decode(response.body).reversed); // Reverse the list here
         isLoading = false;
       });
+    } else {
+      throw Exception('Failed to load plants');
     }
+  } catch (e) {
+    setState(() {
+      errorMessage = 'Failed to load plants. Please try again.';
+      isLoading = false;
+    });
   }
+}
+
 
   Future<void> fetchSites() async {
     try {
@@ -109,7 +111,11 @@ void _addPlant() {
     MaterialPageRoute(
       builder: (context) => const SearchPlantsPage(),
     ),
-  );
+  ).then((result) {
+    if (result == true) {
+      fetchPlants(); // Refresh the plants list
+    }
+  });
 }
 
 void _addSite() {
@@ -169,6 +175,20 @@ void _addSite() {
       ),
     );
 }
+
+
+String? sortOption; // Add a state variable for sorting
+
+void _sortPlants() {
+  if (sortOption == 'Alphabetical (A-Z)') {
+    plants.sort((a, b) => (a['nickname'] ?? '').compareTo(b['nickname'] ?? ''));
+  } else if (sortOption == 'Alphabetical (Z-A)') {
+    plants.sort((a, b) => (b['nickname'] ?? '').compareTo(a['nickname'] ?? ''));
+  } else if (sortOption == 'Last Added') {
+    plants.sort((a, b) => b['id'].compareTo(a['id'])); // Assuming 'id' represents the order of addition
+  }
+}
+
 
   Widget _buildEmptyState() {
     return Center(
@@ -547,6 +567,37 @@ Widget build(BuildContext context) {
             ),
           ),
         ),
+        // Sort filter for plants tab
+        if (selectedTabIndex == 0)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Sort by:',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                ),
+                DropdownButton<String>(
+                  value: sortOption,
+                  icon: const Icon(Icons.sort),
+                  onChanged: (String? newValue) {
+                    setState(() {
+                      sortOption = newValue;
+                      _sortPlants();
+                    });
+                  },
+                  items: <String>['Alphabetical (A-Z)', 'Alphabetical (Z-A)', 'Last Added']
+                      .map<DropdownMenuItem<String>>((String value) {
+                    return DropdownMenuItem<String>(
+                      value: value,
+                      child: Text(value),
+                    );
+                  }).toList(),
+                ),
+              ],
+            ),
+          ),
         // Content
         Expanded(
           child: selectedTabIndex == 0
@@ -601,13 +652,13 @@ Widget build(BuildContext context) {
                       width: 60,
                     ),
                   ),
-                  const SizedBox(width: 12), 
+                  const SizedBox(width: 12),
                   Text(
                     selectedTabIndex == 0 ? 'Add Plant' : 'Add Site',
                     style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
                 ],
@@ -619,4 +670,6 @@ Widget build(BuildContext context) {
     ),
   );
 }
+
+
 }

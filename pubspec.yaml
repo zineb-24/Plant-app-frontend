@@ -65,7 +65,7 @@ flutter:
     - lib/assets/icons/plant_icon.png
     - lib/assets/icons/smiley_plant.png
     - lib/assets/icons/dog_plant.png
-    - lib/assets/icons/leaves_bg.jpg
+    - lib/assets/images/leaves_bg.jpg
     - lib/assets/icons/cat.png
     - lib/assets/icons/plus.png
     - lib/assets/icons/task.png

@@ -6,7 +6,7 @@ import 'dart:math';
 import '/ui/screens/site_plant_list.dart';
 import '/ui/screens/add_site.dart';
 import '/ui/screens/search_plants.dart';
-import '/ui/screens/add_user_plant_form.dart';
+import '/ui/screens/plant_details.dart';
 
 class MyPlantsPage extends StatefulWidget {
   const MyPlantsPage({super.key});
@@ -214,102 +214,112 @@ void _sortPlants() {
     );
   }
 
-  Widget _buildPlantsList() {
+Widget _buildPlantsList() {
   return ListView.builder(
     padding: const EdgeInsets.symmetric(horizontal: 20),
     itemCount: plants.length,
     itemBuilder: (context, index) {
       final plant = plants[index];
-      return Container(
-        margin: const EdgeInsets.only(bottom: 16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey.shade200),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(16),  // Increased padding
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Plant Image - Increased size
-              ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: plant['image'] != null
-                    ? Image.network(
-                        plant['image']?.startsWith('http://localhost') == true
-                          ? plant['image']?.replaceFirst('http://localhost', 'http://10.0.2.2')
-                          : plant['image'],
-                        width: 100,  // Increased from 80
-                        height: 100, // Increased from 80
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => Container(
-                          width: 100,  // Increased from 80
-                          height: 100, // Increased from 80
+      return GestureDetector(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => PlantDetailsPage(
+                plant: plant,
+              ),
+            ),
+          );
+        },
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.grey.shade200),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: plant['image'] != null
+                      ? Image.network(
+                          plant['image']?.startsWith('http://localhost') == true
+                            ? plant['image']?.replaceFirst('http://localhost', 'http://10.0.2.2')
+                            : plant['image'],
+                          width: 100,
+                          height: 100,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) => Container(
+                            width: 100,
+                            height: 100,
+                            color: Colors.grey[100],
+                            child: Icon(Icons.eco, 
+                              color: Colors.grey[300],
+                              size: 40,
+                            ),
+                          ),
+                        )
+                      : Container(
+                          width: 100,
+                          height: 100,
                           color: Colors.grey[100],
                           child: Icon(Icons.eco, 
                             color: Colors.grey[300],
-                            size: 40,  // Increased icon size
+                            size: 40,
                           ),
                         ),
-                      )
-                    : Container(
-                        width: 100,  // Increased from 80
-                        height: 100, // Increased from 80
-                        color: Colors.grey[100],
-                        child: Icon(Icons.eco, 
-                          color: Colors.grey[300],
-                          size: 40,  // Increased icon size
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        plant['nickname'] ?? 'Plant name',
+                        style: const TextStyle(
+                          fontSize: 21,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.black87,
                         ),
                       ),
-              ),
-              const SizedBox(width: 16),  // Increased spacing
-              // Plant Details
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      plant['nickname'] ?? 'Plant name',
-                      style: const TextStyle(
-                        fontSize: 21,  // Increased from 16
-                        fontWeight: FontWeight.w500,
-                        color: Colors.black87,
-                      ),
-                    ),
-                    const SizedBox(height: 4),  // Increased spacing
-                    Text(
-                      plant['plant'] != null && plant['plant']['species_name'] != null
-                        ? plant['plant']['species_name']
-                        : 'Species name',
-                      style: TextStyle(
-                        fontSize: 17,  // Increased from 14
-                        color: const Color.fromARGB(255, 1, 167, 159) ,
-                        fontStyle: FontStyle.italic,
-                      ),
-                    ),
-                    const SizedBox(height: 20),  // Increased spacing
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.location_on_outlined,
-                          size: 20,  // Increased from 16
-                          color: Colors.grey[600],
+                      const SizedBox(height: 4),
+                      Text(
+                        plant['plant'] != null && plant['plant']['species_name'] != null
+                          ? plant['plant']['species_name']
+                          : 'Species name',
+                        style: TextStyle(
+                          fontSize: 17,
+                          color: const Color.fromARGB(255, 1, 167, 159),
+                          fontStyle: FontStyle.italic,
                         ),
-                        const SizedBox(width: 6),  // Increased spacing
-                        Text(
-                          plant['site'] != null ? plant['site']['name'] : 'No location',
-                          style: TextStyle(
-                            fontSize: 17,  // Increased from 14
+                      ),
+                      const SizedBox(height: 20),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.location_on_outlined,
+                            size: 20,
                             color: Colors.grey[600],
                           ),
-                        ),
-                      ],
-                    ),
-                  ],
+                          const SizedBox(width: 6),
+                          Text(
+                            plant['site'] != null ? plant['site']['name'] : 'No location',
+                            style: TextStyle(
+                              fontSize: 17,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       );

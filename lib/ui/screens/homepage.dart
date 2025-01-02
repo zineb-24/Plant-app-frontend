@@ -236,7 +236,7 @@ Widget _buildTaskCard() {
         ),
       ],
       image: DecorationImage(
-        image: AssetImage('lib/assets/icons/leaves_bg.jpg'),
+        image: AssetImage('lib/assets/images/leaves_bg.jpg'),
         fit: BoxFit.cover,
         opacity: 0.8,
       ),

@@ -196,9 +196,9 @@ void _sortPlants() {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Image.asset(
-            'lib/assets/icons/empty_plant.png',
-            height: 160,
-            width: 160,
+            'lib/assets/icons/smiley_plant.png',
+            height: 100,
+            width: 100,
           ),
           const SizedBox(height: 20),
           Text(

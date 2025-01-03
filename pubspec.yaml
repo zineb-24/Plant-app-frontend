@@ -74,6 +74,13 @@ flutter:
     - lib/assets/icons/fertilizing.png
     - lib/assets/icons/misting.png
     - lib/assets/icons/pruning.png
+    - lib/assets/icons/sun.png
+    - lib/assets/icons/temperature.png
+    - lib/assets/icons/toxic.png
+    - lib/assets/icons/flower.png
+    - lib/assets/icons/leaves.png
+      
+
   # To add assets to your application, add an assets section, like this:
   # assets:
   #   - images/a_dot_burr.jpeg

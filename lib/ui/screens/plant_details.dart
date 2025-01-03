@@ -51,7 +51,7 @@ class PlantDetailsPageState extends State<PlantDetailsPage> {
       if (response.statusCode == 200) {
         setState(() {
           plantDetails = json.decode(response.body);
-          print(plantDetails);
+          //print(plantDetails); //debug line
           isLoading = false;
         });
       } else {
@@ -197,122 +197,32 @@ Future<void> _completeTask(int taskId) async {
     );
   }
 
- Widget _buildTodaysTasks() {
-  if (plantDetails == null || plantDetails!['task_checks']['tasks_due_today'].isEmpty) {
-     return const SizedBox();
+
+String _formatFrequency(String frequency) {
+  //print('Formatting frequency: $frequency'); // Debug print
+
+  // Convert to lowercase, trim whitespace and remove (s) for consistent comparison
+  final normalizedFreq = frequency.toLowerCase().trim().replaceAll('(s)', '');
+  
+  if (normalizedFreq == 'every 1 day') {
+    return 'Everyday';
+  } else if (normalizedFreq == 'every 1 week') {
+    return 'Every Week';
+  } else if (normalizedFreq == 'every 1 month') {
+    return 'Every Month';
   }
 
-  return Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 4), // Matches the tab's padding
-    child: Container(
-      padding: const EdgeInsets.all(25),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.2),
-            spreadRadius: 1,
-            blurRadius: 6,
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            "Today's Tasks",
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-              color: Colors.black,
-            ),
-          ),
-          const SizedBox(height: 20),
-          ...plantDetails!['task_checks']['tasks_due_today'].map((task) {
-            final String taskName = task['task_name'].toString().toLowerCase();
-            final Color backgroundColor = taskColors[taskName] ?? Colors.grey;
-            final Color iconColor = backgroundColor.withOpacity(1);
-
-            return Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  child: Row(
-                    children: [
-                      // Task Icon
-                      Container(
-                        width: 65,
-                        height: 65,
-                        decoration: BoxDecoration(
-                          color: backgroundColor.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(35),
-                        ),
-                        child: Center(
-                          child: Image.asset(
-                            'lib/assets/icons/${taskName}.png',
-                            width: 40,
-                            height: 40,
-                            color: iconColor,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      // Task Name and Frequency
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              task['task_name'].toString().capitalize(),
-                              style: const TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.w500,
-                                color: Colors.black,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Every ${task['interval']} ${task['unit']}${task['interval'] > 1 ? 's' : ''}',
-                              style: const TextStyle(
-                                fontSize: 16,
-                                color: Color.fromARGB(255, 112, 112, 112),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      // Complete Button
-                      TextButton(
-                        onPressed: () => _showTaskCompletionDialog(task['id']),
-                        style: TextButton.styleFrom(
-                          backgroundColor: const Color(0xFF01A79F),
-                          padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 15),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(30),
-                          ),
-                        ),
-                        child: const Text(
-                          'Done',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16), // Spacing between tasks
-              ],
-            );
-          }).toList(),
-        ],
-      ),
-    ),
-  );
+  // For other frequencies (e.g., "every 2 days", "every 3 weeks", etc.)
+  if (frequency.startsWith('every ')) {
+    final parts = frequency.split(' ');
+    if (parts.length >= 3) {
+      final number = parts[1];
+      final unit = parts[2].replaceAll('(s)', '');  // Remove (s) from unit
+      return 'Every $number ${unit.capitalize()}${number != '1' ? 's' : ''}';
+    }
+  }
+  
+  return frequency;
 }
 
 Widget _buildCareSchedule() {
@@ -386,7 +296,9 @@ Widget _buildCareSchedule() {
           ...plantDetails!['tasks'].map((task) {
             final String taskName = task['name'].toString().toLowerCase();
             final Color backgroundColor = taskColors[taskName] ?? Colors.grey;
-            final Color iconColor = backgroundColor.withOpacity(0.7);
+            final Color iconColor = backgroundColor.withOpacity(1);
+
+            //print('Raw frequency: ${task['frequency']}'); //debug line
 
             return Column(
               children: [
@@ -425,7 +337,7 @@ Widget _buildCareSchedule() {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            task['frequency'],
+                            _formatFrequency(task['frequency']),
                             style: const TextStyle(
                               fontSize: 16,
                               color: Color.fromARGB(255, 112, 112, 112),
@@ -483,13 +395,16 @@ Widget _buildAboutSection() {
                     width: 65,
                     height: 65,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFE0F7FA),
+                      color: const Color(0xFFFFBF10).withOpacity(0.2),
                       borderRadius: BorderRadius.circular(35),
                     ),
-                    child: const Icon(
-                      Icons.wb_sunny_outlined,
-                      size: 32,
-                      color: Color(0xFF01A79F),
+                    child: Center(
+                      child: Image.asset(
+                        'lib/assets/icons/sun.png',
+                        width: 35,
+                        height: 35,
+                        color: const Color(0xFFFFBF10),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 16),
@@ -522,13 +437,16 @@ Widget _buildAboutSection() {
                     width: 65,
                     height: 65,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFE0F7FA),
+                      color: const Color(0xFF60D6F4).withOpacity(0.2),
                       borderRadius: BorderRadius.circular(35),
                     ),
-                    child: const Icon(
-                      Icons.thermostat,
-                      size: 32,
-                      color: Color(0xFF01A79F),
+                    child: Center(
+                      child: Image.asset(
+                        'lib/assets/icons/temperature.png',
+                        width: 35,
+                        height: 35,
+                        color: const Color(0xFF60D6F4),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 16),
@@ -561,13 +479,16 @@ Widget _buildAboutSection() {
                     width: 65,
                     height: 65,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFE0F7FA),
+                      color: const Color(0xFFFF5722).withOpacity(0.2),
                       borderRadius: BorderRadius.circular(35),
                     ),
-                    child: const Icon(
-                      Icons.local_florist_outlined,
-                      size: 32,
-                      color: Color(0xFF01A79F),
+                    child: Center(
+                      child: Image.asset(
+                        'lib/assets/icons/flower.png',
+                        width: 30,
+                        height: 30,
+                        color: const Color(0xFFFF5722),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 16),
@@ -600,18 +521,22 @@ Widget _buildAboutSection() {
                     width: 65,
                     height: 65,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFE0F7FA),
+                      color: plant['toxicity']?.toLowerCase() == 'non-toxic'
+                          ? const Color(0xFF18C993).withOpacity(0.2)
+                          : const Color(0xFF18C993).withOpacity(0.2),
                       borderRadius: BorderRadius.circular(35),
                     ),
-                    child: Icon(
-                      // Dynamically set the icon based on toxicity
-                      plant['toxicity']?.toLowerCase() == 'non-toxic'
-                          ? Icons.verified_outlined // Non-toxic icon
-                          : Icons.warning_amber_outlined, // Toxic icon
-                      size: 32,
-                      color: plant['toxicity']?.toLowerCase() == 'non-toxic'
-                          ? const Color(0xFF4CAF50) // Green for non-toxic
-                          : const Color(0xFFFF5722), // Orange for toxic
+                    child: Center(
+                      child: Image.asset(
+                        plant['toxicity']?.toLowerCase() == 'non-toxic'
+                            ? 'lib/assets/icons/leaves.png'
+                            : 'lib/assets/icons/toxic.png',
+                        width: 35,
+                        height: 35,
+                        color: plant['toxicity']?.toLowerCase() == 'non-toxic'
+                            ? const Color(0xFF18C993)
+                            : const Color(0xFF18C993),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 16),
@@ -689,153 +614,152 @@ Widget _buildAboutSection() {
 }
 
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.grey[100],
-      body: isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : CustomScrollView(
-              slivers: [
-                SliverAppBar(
-                  expandedHeight: 300.0,
-                  floating: false,
-                  pinned: false,
-                  backgroundColor: Colors.transparent,
-                  flexibleSpace: FlexibleSpaceBar(
-                    background: widget.plant['image'] != null
-                        ? Image.network(
-                            widget.plant['image']?.startsWith('http://localhost') == true
-                                ? widget.plant['image']?.replaceFirst('http://localhost', 'http://10.0.2.2')
-                                : widget.plant['image'],
-                            fit: BoxFit.cover,
-                          )
-                        : Container(
-                            color: Colors.grey[200],
-                            child: Icon(
-                              Icons.eco,
-                              size: 100,
-                              color: Colors.grey[400],
-                            ),
+ @override
+Widget build(BuildContext context) {
+  return Scaffold(
+    backgroundColor: Colors.grey[100],
+    body: isLoading
+        ? const Center(child: CircularProgressIndicator())
+        : CustomScrollView(
+            slivers: [
+              SliverAppBar(
+                expandedHeight: 300.0,
+                floating: false,
+                pinned: false,
+                backgroundColor: Colors.transparent,
+                flexibleSpace: FlexibleSpaceBar(
+                  background: widget.plant['image'] != null
+                      ? Image.network(
+                          widget.plant['image']?.startsWith('http://localhost') == true
+                              ? widget.plant['image']?.replaceFirst('http://localhost', 'http://10.0.2.2')
+                              : widget.plant['image'],
+                          fit: BoxFit.cover,
+                        )
+                      : Container(
+                          color: Colors.grey[200],
+                          child: Icon(
+                            Icons.eco,
+                            size: 100,
+                            color: Colors.grey[400],
                           ),
+                        ),
+                ),
+                leading: Container(
+                  margin: const EdgeInsets.only(left: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.9),
+                    shape: BoxShape.circle,
                   ),
-                  leading: Container(
-                    margin: const EdgeInsets.only(left: 8),
+                  child: IconButton(
+                    icon: const Icon(Icons.arrow_back_ios_new, color: Colors.black),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ),
+                actions: [
+                  Container(
+                    margin: const EdgeInsets.only(right: 8),
                     decoration: BoxDecoration(
                       color: Colors.white.withOpacity(0.9),
                       shape: BoxShape.circle,
                     ),
                     child: IconButton(
-                      icon: const Icon(Icons.arrow_back_ios_new, color: Colors.black),
-                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(Icons.settings, color: Colors.grey),
+                      onPressed: null, // Disabled for now
                     ),
                   ),
-                  actions: [
-                    Container(
-                      margin: const EdgeInsets.only(right: 8),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.9),
-                        shape: BoxShape.circle,
+                ],
+              ),
+              SliverToBoxAdapter(
+                child: Container(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        widget.plant['nickname'] ?? 'Plant name',
+                        style: const TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                      child: IconButton(
-                        icon: const Icon(Icons.settings, color: Colors.grey),
-                        onPressed: null, // Disabled for now
+                      const SizedBox(height: 8),
+                      Text(
+                        'Specie : ${widget.plant['plant']['species_name']}',
+                        style: const TextStyle(
+                          fontSize: 20,
+                          color: Color.fromARGB(255, 0, 0, 0),
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-                SliverToBoxAdapter(
-                  child: Container(
-                    padding: const EdgeInsets.all(20),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          widget.plant['nickname'] ?? 'Plant name',
-                          style: const TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                          ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Botanical name : ${widget.plant['plant']['scientific_name']}',
+                        style: TextStyle(
+                          fontSize: 20,
+                          color: const Color(0xFF525252),
+                          fontStyle: FontStyle.italic,
                         ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Specie : ${widget.plant['plant']['species_name']}',
-                          style: const TextStyle(
-                            fontSize: 20,
-                            color: Color.fromARGB(255, 0, 0, 0),
-                            fontWeight: FontWeight.w500,
+                      ),
+                      const SizedBox(height: 18),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.location_on_outlined,
+                            size: 24,
+                            color: const Color(0xFF01A79F),
                           ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Botanical name : ${widget.plant['plant']['scientific_name']}',
-                          style: TextStyle(
-                            fontSize: 20,
-                            color: const Color(0xFF525252),
-                            fontStyle: FontStyle.italic,
-                          ),
-                        ),
-                        const SizedBox(height: 18),
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.location_on_outlined,
-                              size: 24,
+                          const SizedBox(width: 4),
+                          Text(
+                            widget.plant['site'] != null
+                                ? '${widget.plant['site']['name']} - ${widget.plant['site']['location'].toString().capitalize()}'
+                                : 'No location',
+                            style: TextStyle(
+                              fontSize: 20,
                               color: const Color(0xFF01A79F),
+                              fontWeight: FontWeight.w500,
                             ),
-                            const SizedBox(width: 4),
-                            Text(
-                              widget.plant['site'] != null
-                                  ? '${widget.plant['site']['name']} - ${widget.plant['site']['location'].toString().capitalize()}'
-                                  : 'No location',
-                              style: TextStyle(
-                                fontSize: 20,
-                                color: const Color(0xFF01A79F),
-                                fontWeight: FontWeight.w500,
-                              ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+                      Container(
+                        padding: const EdgeInsets.symmetric(vertical: 3, horizontal: 3),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(18),
+                          border: Border.all(color: Colors.grey.shade200),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.grey.withOpacity(0.1),
+                              spreadRadius: 0,
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 20),
-                        Container(
-                          padding: const EdgeInsets.symmetric(vertical: 3, horizontal: 3),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(18),
-                            border: Border.all(color: Colors.grey.shade200),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.grey.withOpacity(0.1),
-                                spreadRadius: 0,
-                                blurRadius: 8,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: Row(
-                            children: [
-                              _buildTabButton('Care', 0),
-                              _buildTabButton('About', 1),
-                            ],
-                          ),
+                        child: Row(
+                          children: [
+                            _buildTabButton('Care', 0),
+                            _buildTabButton('About', 1),
+                          ],
                         ),
-                        const SizedBox(height: 20),
-                        if (selectedTabIndex == 0) ...[
-                          _buildTodaysTasks(),
-                          const SizedBox(height: 20),
-                          _buildCareSchedule(),
-                        ],
-                        if (selectedTabIndex == 1) ...[
-                          _buildAboutSection(),
-                        ],
+                      ),
+                      const SizedBox(height: 20),
+                      if (selectedTabIndex == 0) ...[
+                        _buildCareSchedule(),
                       ],
-                    ),
+                      if (selectedTabIndex == 1) ...[
+                        _buildAboutSection(),
+                      ],
+                    ],
                   ),
                 ),
-              ],
-            ),
-    );
-  }
+              ),
+            ],
+          ),
+  );
+}
+
 }
 
 extension StringExtension on String {

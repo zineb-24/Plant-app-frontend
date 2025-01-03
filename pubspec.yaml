@@ -79,6 +79,7 @@ flutter:
     - lib/assets/icons/toxic.png
     - lib/assets/icons/flower.png
     - lib/assets/icons/leaves.png
+    - lib/assets/icons/leaves_bg2.png
       
 
   # To add assets to your application, add an assets section, like this:

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import '/ui/screens/edit_user_plant.dart';
 
 class PlantDetailsPage extends StatefulWidget {
   final Map<String, dynamic> plant;
@@ -36,83 +37,12 @@ class PlantDetailsPageState extends State<PlantDetailsPage> {
 
 
   Future<void> fetchPlantDetails() async {
-    try {
-      setState(() => isLoading = true);
-      final credentials = await storage.read(key: 'credentials');
-      
-      final response = await http.get(
-        Uri.parse('http://10.0.2.2:8000/api/userPlant-details/${widget.plant['id']}/'),
-        headers: {
-          'Authorization': 'Basic $credentials',
-          'Content-Type': 'application/json',
-        },
-      );
-
-      if (response.statusCode == 200) {
-        setState(() {
-          plantDetails = json.decode(response.body);
-          //print(plantDetails); //debug line
-          isLoading = false;
-        });
-      } else {
-        throw Exception('Failed to load plant details');
-      }
-    } catch (e) {
-      setState(() {
-        isLoading = false;
-      });
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
-
-// Add this method to handle task completion
-Future<void> _showTaskCompletionDialog(int taskId) async {
-  return showDialog<void>(
-    context: context,
-    barrierDismissible: false,
-    builder: (BuildContext context) {
-      return AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(15),
-        ),
-        title: const Text('Task Completion'),
-        content: const Text('Did you complete this task?'),
-        actions: <Widget>[
-          TextButton(
-            child: const Text('No', style: TextStyle(color: Colors.grey)),
-            onPressed: () {
-              Navigator.of(context).pop();
-            },
-          ),
-          TextButton(
-            child: const Text(
-              'Yes',
-              style: TextStyle(color: Color(0xFF018882)),
-            ),
-            onPressed: () {
-              Navigator.of(context).pop();
-              _completeTask(taskId);
-            },
-          ),
-        ],
-      );
-    },
-  );
-}
-
-Future<void> _completeTask(int taskId) async {
   try {
+    setState(() => isLoading = true);
     final credentials = await storage.read(key: 'credentials');
-    
-    final response = await http.post(
-      Uri.parse('http://10.0.2.2:8000/api/tasks/$taskId/complete/'),
+
+    final response = await http.get(
+      Uri.parse('http://10.0.2.2:8000/api/userPlant-details/${widget.plant['id']}/'),
       headers: {
         'Authorization': 'Basic $credentials',
         'Content-Type': 'application/json',
@@ -120,38 +50,28 @@ Future<void> _completeTask(int taskId) async {
     );
 
     if (response.statusCode == 200) {
-      if (!mounted) return;
-      
-      // Refresh plant details to update the UI
-      await fetchPlantDetails();
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Task completed successfully!'),
-          backgroundColor: const Color(0xFF018882),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-        ),
-      );
+      final details = json.decode(response.body);
+      setState(() {
+        plantDetails = details;
+        widget.plant['nickname'] = details['user_plant']['nickname']; // Synchronize nickname
+        isLoading = false;
+      });
     } else {
-      throw Exception('Failed to complete task');
+      throw Exception('Failed to load plant details');
     }
   } catch (e) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Error: $e'),
-        backgroundColor: Colors.red,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
+    setState(() => isLoading = false);
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: $e'),
+          backgroundColor: Colors.red,
         ),
-      ),
-    );
+      );
+    }
   }
 }
+
 
   Widget _buildTabButton(String text, int index) {
     final isSelected = selectedTabIndex == index;
@@ -242,12 +162,19 @@ Widget _buildCareSchedule() {
                 shape: BoxShape.circle,
               ),
               child: IconButton(
-                onPressed: null, // Disabled for now
-                icon: const Icon(
-                  Icons.add,
-                  color: Colors.white,
-                  size: 30,
-                ),
+                icon: const Icon(Icons.settings, color: Colors.grey),
+                onPressed: () async {
+                  final result = await Navigator.of(context).push(MaterialPageRoute(
+                    builder: (context) => EditUserPlantForm(
+                      plant: plantDetails!['user_plant'],
+                      onPlantUpdated: fetchPlantDetails, // Pass fetchPlantDetails directly
+                    ),
+                  ));
+
+                  if (result != null && result == true) {
+                    await fetchPlantDetails(); // Ensure data is refreshed
+                  }
+                },
               ),
             ),
             const SizedBox(height: 16),
@@ -664,7 +591,20 @@ Widget build(BuildContext context) {
                     ),
                     child: IconButton(
                       icon: const Icon(Icons.settings, color: Colors.grey),
-                      onPressed: null, // Disabled for now
+                      onPressed: () async {
+                        final result = await Navigator.of(context).push(MaterialPageRoute(
+                          builder: (context) => EditUserPlantForm(
+                            plant: plantDetails!['user_plant'],
+                            onPlantUpdated: () async {
+                              await fetchPlantDetails(); // Refresh the details after editing
+                            },
+                          ),
+                        ));
+
+                        if (result != null && result == true) {
+                          await fetchPlantDetails(); // Ensure changes reflect if the result is true
+                        }
+                      },
                     ),
                   ),
                 ],

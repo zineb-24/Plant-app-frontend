@@ -5,7 +5,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '/ui/screens/add_user_plant_form.dart';
 
 class SearchPlantsPage extends StatefulWidget {
-  const SearchPlantsPage({Key? key}) : super(key: key);
+  const SearchPlantsPage({super.key});
 
   @override
   SearchPlantsPageState createState() => SearchPlantsPageState();

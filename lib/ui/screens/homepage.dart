@@ -3,7 +3,9 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:intl/intl.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import '/ui/widgets/filter_buttons.dart'; 
+import '/ui/widgets/filter_buttons.dart';
+import '/ui/screens/login.dart';
+import '/ui/widgets/bottom_menu.dart';
 
 
 class TaskData {
@@ -58,6 +60,83 @@ class HomePageState extends State<HomePage> with SingleTickerProviderStateMixin 
     _scrollController.dispose();
     super.dispose();
   }
+
+
+Future<void> _handleLogout() async {
+  try {
+    final storage = FlutterSecureStorage();
+    final credentials = await storage.read(key: 'credentials') ?? '';
+    print("Current credentials before logout: $credentials");
+
+    // First clear credentials
+    await storage.delete(key: 'credentials');
+    await storage.delete(key: 'username'); // Also clear username
+    print("Credentials cleared");
+
+    // Then send the logout request (doesn't matter if it fails)
+    try {
+      await http.post(
+        Uri.parse('http://10.0.2.2:8000/api/logout'),
+        headers: {
+          'Authorization': 'Basic $credentials',
+          'Content-Type': 'application/json',
+        },
+      );
+    } catch (e) {
+      print("Logout request error: $e"); // Non-critical error
+    }
+
+    if (!mounted) return;
+    
+    // Navigate to login screen with a fresh instance
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(
+        builder: (context) => LoginScreen(
+          onLoginSuccess: (String credentials) async {
+            // Create a new storage instance
+            final storage = FlutterSecureStorage();
+            await storage.write(key: 'credentials', value: credentials);
+            
+            // Get user details
+            final response = await http.get(
+              Uri.parse('http://10.0.2.2:8000/api/user'),
+              headers: {'Authorization': 'Basic $credentials'},
+            );
+            
+            if (response.statusCode == 200) {
+              final userData = json.decode(response.body);
+              await storage.write(key: 'username', value: userData['username']);
+              
+              // Rebuild the app from root with new credentials
+              Navigator.of(context).pushAndRemoveUntil(
+                MaterialPageRoute(
+                  builder: (context) => BottomMenu(
+                    username: userData['username'],
+                  ),
+                ),
+                (route) => false,
+              );
+            }
+          },
+        ),
+      ),
+      (route) => false,
+    );
+  } catch (e) {
+    print("Logout error: $e");
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Error logging out: $e'),
+        backgroundColor: Colors.red,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+        ),
+      ),
+    );
+  }
+}
+
 
 Future<void> _showTaskCompletionDialog(int taskId) async {
   //print('Dialog method called for task: $taskId'); // Debug print
@@ -709,12 +788,45 @@ Widget build(BuildContext context) {
                     color: Colors.black,
                   ),
                 ),
-                CircleAvatar(
-                  backgroundColor: Colors.grey[200],
-                  child: const Icon(
-                    Icons.person,
-                    color: Colors.grey,
+                PopupMenuButton(
+                  offset: const Offset(0, 50),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(15),
                   ),
+                  child: CircleAvatar(
+                    backgroundColor: Colors.grey[200],
+                    child: const Icon(
+                      Icons.person,
+                      color: Colors.grey,
+                    ),
+                  ),
+                  itemBuilder: (context) => [
+                    PopupMenuItem(
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.logout,
+                            color: Color(0xFFE13857),
+                            size: 20,
+                          ),
+                          const SizedBox(width: 8),
+                          const Text(
+                            'Logout',
+                            style: TextStyle(
+                              color: Color(0xFFE13857),
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                      onTap: () {
+                        Future.delayed(
+                          const Duration(milliseconds: 100),
+                          () => _handleLogout(),
+                        );
+                      },
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -782,4 +894,5 @@ Widget build(BuildContext context) {
     ),
   );
 }
+
 }

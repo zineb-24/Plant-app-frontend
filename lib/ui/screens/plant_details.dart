@@ -241,7 +241,7 @@ Widget _buildCareSchedule() {
                       ),
                       child: Center(
                         child: Image.asset(
-                          'lib/assets/icons/${taskName}.png',
+                          'lib/assets/icons/$taskName.png',
                           width: 40,
                           height: 40,
                           color: iconColor,

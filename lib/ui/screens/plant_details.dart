@@ -219,7 +219,7 @@ Widget _buildCareSchedule() {
               color: Colors.black,
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 35),
           ...plantDetails!['tasks'].map((task) {
             final String taskName = task['name'].toString().toLowerCase();
             final Color backgroundColor = taskColors[taskName] ?? Colors.grey;
@@ -275,7 +275,7 @@ Widget _buildCareSchedule() {
                     ),
                   ],
                 ),
-                const SizedBox(height: 16), // Spacing between tasks
+                const SizedBox(height: 25), // Spacing between tasks
               ],
             );
           }).toList(),
@@ -350,7 +350,7 @@ Widget _buildAboutSection() {
                         'Preferred Light',
                         style: TextStyle(
                           fontSize: 16,
-                          color: Colors.grey,
+                          color: Color(0xFF8B8B8B),
                         ),
                       ),
                     ],
@@ -392,7 +392,7 @@ Widget _buildAboutSection() {
                         'Ideal Temperature',
                         style: TextStyle(
                           fontSize: 16,
-                          color: Colors.grey,
+                          color: Color(0xFF8B8B8B),
                         ),
                       ),
                     ],
@@ -434,7 +434,7 @@ Widget _buildAboutSection() {
                         'Bloom Time',
                         style: TextStyle(
                           fontSize: 16,
-                          color: Colors.grey,
+                          color: Color(0xFF8B8B8B),
                         ),
                       ),
                     ],
@@ -482,7 +482,7 @@ Widget _buildAboutSection() {
                         'Toxicity',
                         style: TextStyle(
                           fontSize: 16,
-                          color: Colors.grey,
+                          color: Color(0xFF8B8B8B),
                         ),
                       ),
                     ],

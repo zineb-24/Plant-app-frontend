@@ -509,7 +509,12 @@ Widget build(BuildContext context) {
       preferredSize: const Size.fromHeight(70.0),
       child: Container(
         decoration: BoxDecoration(
-          color: const Color(0xFFFFEAB7),
+          image: const DecorationImage(
+            image: AssetImage('lib/assets/images/leaves_bg4.6.png'),
+            fit: BoxFit.cover,
+            opacity: 1,
+          ),
+          color: const Color(0xFFFFEAB7),  // Original color acts as an overlay
           boxShadow: [
             BoxShadow(
               color: Colors.grey.withOpacity(0.1),
@@ -528,13 +533,23 @@ Widget build(BuildContext context) {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
-                  'My Plants',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black,
-                  ),
+                Row(
+                  children: [
+                    //const Icon(
+                      //Icons.eco,
+                      //size: 28,
+                      //color: Colors.black,
+                    //),
+                    const SizedBox(width: 10),
+                    const Text(
+                      'My Plants',
+                      style: TextStyle(
+                        fontSize: 26,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black,
+                      ),
+                    ),
+                  ],
                 ),
                 CircleAvatar(
                   backgroundColor: Colors.grey[200],

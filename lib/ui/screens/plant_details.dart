@@ -162,7 +162,7 @@ Widget _buildCareSchedule() {
                 shape: BoxShape.circle,
               ),
               child: IconButton(
-                icon: const Icon(Icons.settings, color: Colors.grey),
+                icon: const Icon(Icons.add, color: Color.fromARGB(255, 255, 255, 255)),
                 onPressed: () async {
                   final result = await Navigator.of(context).push(MaterialPageRoute(
                     builder: (context) => EditUserPlantForm(
@@ -592,18 +592,22 @@ Widget build(BuildContext context) {
                     child: IconButton(
                       icon: const Icon(Icons.settings, color: Colors.grey),
                       onPressed: () async {
-                        final result = await Navigator.of(context).push(MaterialPageRoute(
-                          builder: (context) => EditUserPlantForm(
-                            plant: plantDetails!['user_plant'],
-                            onPlantUpdated: () async {
-                              await fetchPlantDetails(); // Refresh the details after editing
-                            },
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => EditUserPlantForm(
+                              plant: plantDetails!['user_plant'],
+                              onPlantUpdated: () async {
+                                await fetchPlantDetails(); // Refresh the details after editing
+                              },
+                            ),
                           ),
-                        ));
-
-                        if (result != null && result == true) {
-                          await fetchPlantDetails(); // Ensure changes reflect if the result is true
-                        }
+                        ).then((result) async {
+                          if (result == true) {
+                            // If plant was deleted, pop back to plants list with refresh signal
+                            Navigator.of(context).pop(true);
+                          }
+                        });
                       },
                     ),
                   ),

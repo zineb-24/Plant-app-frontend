@@ -8,6 +8,7 @@ import '/ui/screens/add_site.dart';
 import '/ui/screens/search_plants.dart';
 import '/ui/screens/plant_details.dart';
 
+
 class MyPlantsPage extends StatefulWidget {
   const MyPlantsPage({super.key});
 
@@ -229,7 +230,12 @@ Widget _buildPlantsList() {
                 plant: plant,
               ),
             ),
-          );
+          ).then((result) {
+            if (result == true) {
+              // Refresh plant list if plant was deleted
+              fetchPlants();
+            }
+          });
         },
         child: Container(
           margin: const EdgeInsets.only(bottom: 16),

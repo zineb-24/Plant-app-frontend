@@ -27,6 +27,7 @@ class EditUserPlantFormState extends State<EditUserPlantForm> {
   List<Map<String, dynamic>> sites = [];
   Map<String, dynamic>? selectedSite;
   bool isLoading = false;
+  Set<String> deletedTasks = {}; // Track which tasks have been marked for deletion
   
   // Task states
   bool wateringEnabled = false;
@@ -145,7 +146,41 @@ class EditUserPlantFormState extends State<EditUserPlantForm> {
     }
   }
 
- Future<void> _updatePlant() async {
+
+  Future<void> _updatePlant() async {
+  // Check if any tasks were deleted and show confirmation dialog if needed
+  if (deletedTasks.isNotEmpty) {
+    final shouldProceed = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Confirm Task Deletion'),
+          content: Text(
+            'Are you sure you want to delete the ${deletedTasks.length} task(s)? '
+            'All related history will be lost.'
+          ),
+          actions: [
+            TextButton(
+              child: const Text('Cancel'),
+              onPressed: () => Navigator.of(context).pop(false),
+            ),
+            TextButton(
+              child: const Text(
+                'Delete',
+                style: TextStyle(color: Colors.red),
+              ),
+              onPressed: () => Navigator.of(context).pop(true),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (shouldProceed != true) {
+      return;
+    }
+  }
+
   if (nicknameController.text.isEmpty) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -162,6 +197,27 @@ class EditUserPlantFormState extends State<EditUserPlantForm> {
 
   try {
     final credentials = await storage.read(key: 'credentials');
+
+    // Delete tasks that were marked for deletion
+    for (var taskName in deletedTasks) {
+      final taskToDelete = existingTasks.firstWhere(
+        (task) => task['name'] == taskName,
+        orElse: () => {},
+      );
+
+      if (taskToDelete.containsKey('id')) {
+        final deleteResponse = await http.delete(
+          Uri.parse('http://10.0.2.2:8000/api/tasks/${taskToDelete['id']}/delete/'),
+          headers: {
+            'Authorization': 'Basic $credentials',
+          },
+        );
+
+        if (deleteResponse.statusCode != 204) {
+          throw Exception('Failed to delete task: $taskName');
+        }
+      }
+    }
 
     // Update plant details
     var request = http.MultipartRequest(
@@ -192,12 +248,15 @@ class EditUserPlantFormState extends State<EditUserPlantForm> {
       throw Exception('Failed to update plant');
     }
 
-    // Update tasks
-    for (var task in existingTasks) {
+    // Update existing tasks (excluding deleted ones)
+    for (var task in existingTasks.where(
+      (task) => !deletedTasks.contains(task['name'])
+    )) {
       final taskName = task['name'];
       final updatedFrequency = taskFrequencies[taskName];
 
-      if (updatedFrequency?['interval'] != task['interval'] || updatedFrequency?['unit'] != task['unit']) {
+      if (updatedFrequency?['interval'] != task['interval'] || 
+          updatedFrequency?['unit'] != task['unit']) {
         await http.put(
           Uri.parse('http://10.0.2.2:8000/api/tasks/${task['id']}/update/'),
           headers: {
@@ -339,7 +398,35 @@ Widget _buildTaskFrequencyItem(
   );
 }
 
-
+void _deleteTask(String taskName) {
+  setState(() {
+    switch (taskName) {
+      case 'watering':
+        wateringEnabled = false;
+        break;
+      case 'fertilizing':
+        fertilizingEnabled = false;
+        break;
+      case 'misting':
+        mistingEnabled = false;
+        break;
+      case 'pruning':
+        pruningEnabled = false;
+        break;
+    }
+    deletedTasks.add(taskName);
+  });
+  
+  // Show message that changes will be applied when saving
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: const Text('Task will be deleted when you save changes'),
+      backgroundColor: const Color(0xFF018882),
+      behavior: SnackBarBehavior.floating,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+    ),
+  );
+}
 
   Future<Map<String, dynamic>?> _showFrequencyPicker(String taskName, Map<String, dynamic> currentFrequency) async {
     int interval = currentFrequency['interval'];
@@ -401,8 +488,14 @@ Widget _buildTaskFrequencyItem(
               ),
               actions: [
                 TextButton(
-                  child: const Text('Cancel'),
-                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text(
+                    'Delete',
+                    style: TextStyle(color: Colors.red),
+                  ),
+                  onPressed: () {
+                    _deleteTask(taskName);
+                    Navigator.of(context).pop(); // This will just close the frequency picker dialog
+                  },
                 ),
                 TextButton(
                   child: const Text('Save'),
@@ -422,6 +515,7 @@ Widget _buildTaskFrequencyItem(
   String _formatFrequency(Map<String, dynamic> frequency) {
     return 'Every ${frequency['interval']} ${frequency['unit']}${frequency['interval'] > 1 ? 's' : ''}';
   }
+
 
 Future<void> _editNickname() async {
   final currentNickname = nicknameController.text;
@@ -580,9 +674,79 @@ Future<void> _showImageOptions() async {
   );
 }
 
-  // Rest of the methods and build function are the same as AddUserPlantForm
-  // Just update the title in AppBar and the button text to "Update Plant"
-  // The rest of the UI and functionality remains the same
+Future<void> _showDeleteConfirmation() async {
+  return showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(15),
+        ),
+        title: const Text('Delete Plant'),
+        content: Text(
+          'Are you sure you want to delete "${widget.plant['nickname'] ?? widget.plant['plant']['species_name']}"? This cannot be undone.'
+        ),
+        actions: [
+          TextButton(
+            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+          TextButton(
+            child: const Text(
+              'Delete',
+              style: TextStyle(color: Colors.red),
+            ),
+            onPressed: () {
+              Navigator.of(context).pop();
+              _deletePlant();
+            },
+          ),
+        ],
+      );
+    },
+  );
+}
+
+Future<void> _deletePlant() async {
+  try {
+    final credentials = await storage.read(key: 'credentials');
+    
+    final response = await http.delete(
+      Uri.parse('http://10.0.2.2:8000/api/user-plants/${widget.plant['id']}/'),
+      headers: {
+        'Authorization': 'Basic $credentials',
+      },
+    );
+
+    if (response.statusCode == 204) {
+      if (!mounted) return;
+      
+      // Pop back to plants list with a result to trigger refresh
+      Navigator.of(context).pop(); // Pop edit page
+      Navigator.of(context).pop(true); // Pop details page with refresh signal
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Plant deleted successfully'),
+          backgroundColor: const Color(0xFF018882),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ),
+      );
+    } else {
+      throw Exception('Failed to delete plant');
+    }
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Error: $e'),
+        backgroundColor: Colors.red,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+    );
+  }
+}
 
   @override
   Widget build(BuildContext context) {
@@ -1002,21 +1166,21 @@ Future<void> _showImageOptions() async {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Container(
-                        width: 30,
-                        height: 30,
-                        decoration: const BoxDecoration(
-                          color: Colors.white,
-                          shape: BoxShape.circle,
-                        ),
-                        child: Image.asset(
-                          'lib/assets/icons/plus.png',
-                          height: 60,
-                          width: 60,
-                        ),
+                        //width: 30,
+                        //height: 30,
+                        //decoration: const BoxDecoration(
+                          //color: Colors.white,
+                          //shape: BoxShape.circle,
+                        //),
+                        //child: Image.asset(
+                          //'lib/assets/icons/plus.png',
+                          //height: 60,
+                          //width: 60,
+                        //),
                       ),
-                      const SizedBox(width: 12),
+                      //const SizedBox(width: 12),
                       const Text(
-                        'Update Plant',
+                        'Save changes',
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 18,
@@ -1027,6 +1191,50 @@ Future<void> _showImageOptions() async {
                   ),
                 ),
               ),
+              const SizedBox(height: 20),  // Add spacing between buttons
+              Container(
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE13857),  // Red color for delete button
+                  borderRadius: BorderRadius.circular(15),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.grey.withOpacity(0.1),
+                      spreadRadius: 1,
+                      blurRadius: 5,
+                    ),
+                  ],
+                ),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(15),
+                    onTap: () => _showDeleteConfirmation(),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Image.asset(
+                            'lib/assets/icons/trash-bin.png',
+                            height: 18,
+                            width: 18,
+                            color: Colors.white,  // Make the icon white
+                          ),
+                          const SizedBox(width: 10),
+                          const Text(
+                            'Delete plant',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              )
             ],
           ),
         ),

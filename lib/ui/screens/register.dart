@@ -62,9 +62,23 @@ Future<void> _register() async {
       // Handle validation errors
       final errors = json.decode(response.body);
       if (errors.containsKey('email')) {
-        setState(() {
-          _errorMessage = 'Email is already registered.';
-        });
+        // Check the specific error message for email
+        final emailErrors = errors['email'];
+        if (emailErrors is List && emailErrors.isNotEmpty) {
+          if (emailErrors.first.toString().contains('already registered')) {
+            setState(() {
+              _errorMessage = 'Email is already registered.';
+            });
+          } else if (emailErrors.first.toString().contains('valid')) {
+            setState(() {
+              _errorMessage = 'Please enter a valid email address.';
+            });
+          } else {
+            setState(() {
+              _errorMessage = emailErrors.first.toString();
+            });
+          }
+        }
       } else {
         setState(() {
           _errorMessage = 'Registration failed. Please try again.';

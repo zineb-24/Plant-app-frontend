@@ -42,6 +42,7 @@ class HomePageState extends State<HomePage> with SingleTickerProviderStateMixin 
   String username = '';
   Map<String, TaskData> tasksByDate = {};
 
+
   @override
   void initState() {
     super.initState();
@@ -296,6 +297,7 @@ Future<void> _completeTask(int taskId) async {
     final weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     return weekdays[date.weekday % 7];
   }
+
 
 Widget _buildTaskCard() {
   final dateStr = DateFormat('yyyy-MM-dd').format(selectedDate);
